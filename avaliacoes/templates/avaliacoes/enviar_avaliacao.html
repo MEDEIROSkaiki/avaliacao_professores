@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Avaliar Professor</title>
+    <style>
+        #foto-professor {
+            display: none;
+            width: 120px;
+            height: 120px;
+            object-fit: cover;
+            border: 2px solid #444;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>Avaliar Professor</h1>
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+
+        <p>
+            {{ form.professor.label_tag }}<br>
+            {{ form.professor }}
+        </p>
+
+        <p>
+            {{ form.nota.label_tag }}<br>
+            {% for radio in form.nota %}
+                {{ radio }} 
+            {% endfor %}
+        </p>
+
+        <p>
+            {{ form.comentario.label_tag }}<br>
+            {{ form.comentario }}
+        </p>
+
+        <button type="submit">Enviar Avaliação</button>
+    </form>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            let select = document.getElementById('{{ form.professor.id_for_label }}');
+            let img = document.createElement('img');
+            img.id = 'foto-professor';
+            img.style.display = 'none';
+            img.style.width = '120px';
+            img.style.height = '120px';
+            img.style.objectFit = 'cover';
+            img.style.border = '2px solid #444';
+            img.style.margin = '10px 0';
+
+            select.parentNode.insertBefore(img, select.nextSibling);
+
+            function updatePhoto() {
+                let selectedOption = select.options[select.selectedIndex];
+                let fotoUrl = selectedOption.getAttribute('data-foto-url');
+                if (fotoUrl) {
+                    img.src = fotoUrl;
+                    img.style.display = 'block';
+                } else {
+                    img.style.display = 'none';
+                }
+            }
+
+            select.addEventListener('change', updatePhoto);
+
+            // Inicializa a foto ao carregar a página
+            updatePhoto();
+        });
+    </script>
+</body>
+</html>

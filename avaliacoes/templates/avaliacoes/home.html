@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Página Inicial</title>
+    <style>
+        .btn {
+            display: inline-block;
+            margin: 20px;
+            padding: 15px 30px;
+            background-color: #4CAF50;
+            color: white;
+            font-size: 18px;
+            border-radius: 6px;
+            text-decoration: none;
+            transition: background-color 0.3s ease;
+        }
+        .btn:hover {
+            background-color: #45a049;
+        }
+        body {
+            display: flex;
+            height: 100vh;
+            justify-content: center;
+            align-items: center;
+            flex-wrap: wrap;
+            font-family: Arial, sans-serif;
+        }
+    </style>
+</head>
+<body>
+    <a href="{% url 'lista_professores' %}" class="btn">Lista de Professores</a>
+    <a href="{% url 'enviar_avaliacao' %}" class="btn">Enviar Avaliação</a>
+    <a href="{% url 'dashboard_grafico' %}" class="btn">Dashboard Gráfico</a>
+    <a href="{% url 'lista_comentarios' %}" class="btn">Comentários</a>
+</body>
+</html>

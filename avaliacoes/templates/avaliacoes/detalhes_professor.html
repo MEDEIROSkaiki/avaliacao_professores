@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Detalhes do Professor {{ professor.nome }}</title>
+    <style>
+        .container { max-width: 700px; margin: auto; font-family: Arial, sans-serif; }
+        .foto { width: 150px; height: 150px; object-fit: cover; border-radius: 10px; }
+        .titulo { font-size: 2em; margin-bottom: 10px; }
+        .media { font-style: italic; color: #333; margin-bottom: 20px; }
+        .avaliacao { border-bottom: 1px solid #ccc; padding: 10px 0; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="titulo">{{ professor.nome }}</h1>
+        {% if professor.foto %}
+            <img src="{{ professor.foto.url }}" alt="Foto de {{ professor.nome }}" class="foto">
+        {% endif %}
+        <p>Matéria: {{ professor.materia }}</p>
+        <p class="media">Média de Avaliações: {{ media_nota|floatformat:1 }}</p>
+
+        <h2>Avaliações</h2>
+        {% if avaliacoes %}
+            {% for avaliacao in avaliacoes %}
+                <div class="avaliacao">
+                    <strong>Nota:</strong> {{ avaliacao.nota }}<br>
+                    <p>{{ avaliacao.comentario }}</p>
+                    <small>{{ avaliacao.created_at|date:"d/m/Y H:i" }}</small>
+                </div>
+            {% endfor %}
+        {% else %}
+            <p>Sem avaliações ainda.</p>
+        {% endif %}
+    </div>
+</body>
+</html>

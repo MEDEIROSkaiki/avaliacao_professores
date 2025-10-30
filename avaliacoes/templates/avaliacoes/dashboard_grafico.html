@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Dashboard de Médias dos Professores</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <h1>Dashboard de Médias dos Professores</h1>
+    <canvas id="grafico" width="800" height="400"></canvas>
+    <script>
+        // Inseri os dados já em formato JSON "raw"
+        const nomes = {{ nomes_json|safe }};
+        const medias = {{ medias_json|safe }};
+
+        const ctx = document.getElementById('grafico').getContext('2d');
+        const grafico = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: nomes,
+                datasets: [{
+                    label: 'Média da Avaliação',
+                    data: medias,
+                    backgroundColor: 'rgba(75, 192, 192, 0.7)',
+                    borderColor: 'rgba(75, 192, 192, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                scales: {
+                    y: {
+                        min: 0,
+                        max: 5,
+                        ticks: {
+                            stepSize: 1
+                        }
+                    }
+                },
+                responsive: true,
+                plugins: {
+                    legend: {
+                        display: true
+                    },
+                    tooltip: {
+                        enabled: true
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+</html>
