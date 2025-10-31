@@ -20,7 +20,6 @@ def index(request):
     else:
         return redirect('login')
 
-
 def login_view(request):
     if request.method == 'POST':
         username = request.POST.get('username')
@@ -40,10 +39,12 @@ def login_view(request):
 def home(request):
     return render(request, 'avaliacoes/home.html')
 
-
 @login_required(login_url='login')
 def lista_professores(request):
-    professores = Professor.objects.annotate(media_nota=Avg('avaliacao__nota')).filter(id__isnull=False)
+    professores = Professor.objects.annotate(
+        media_nota=Avg('user__disciplinas_pessoa__avaliacoes__categorias_avaliacao__nota')
+    ).filter(id__isnull=False)
+
     return render(request, 'avaliacoes/lista_professores.html', {'professores': professores})
 
 @login_required(login_url='login')
@@ -73,10 +74,12 @@ def obrigado(request):
 
 @login_required(login_url='login')
 def dashboard_grafico(request):
-    professores = Professor.objects.annotate(media_nota=Avg('avaliacao__nota'))
+    professores = Professor.objects.annotate(
+        media_nota=Avg('user__disciplinas_pessoa__avaliacoes__categorias_avaliacao__nota')
+    )
 
-    nomes = [prof.nome for prof in professores]
-    medias = [prof.media_nota if prof.media_nota else 0 for prof in professores]
+    nomes = [prof.user.get_full_name() or prof.user.username for prof in professores]
+    medias = [prof.media_nota or 0 for prof in professores]
 
     context = {
         'nomes_json': json.dumps(nomes),
@@ -86,14 +89,27 @@ def dashboard_grafico(request):
 
 @login_required(login_url='login')
 def lista_comentarios(request):
-    comentarios = Avaliacao.objects.filter(comentario__isnull=False).exclude(comentario='').select_related('professor')
+    comentarios = Avaliacao.objects.filter(
+        comentario__isnull=False
+    ).exclude(
+        comentario=''
+    ).select_related(
+        'disciplina_pessoa__pessoa'
+    )
     return render(request, 'avaliacoes/lista_comentarios.html', {'comentarios': comentarios})
 
 @login_required(login_url='login')
 def detalhes_professor(request, professor_id):
     professor = get_object_or_404(Professor, pk=professor_id)
-    avaliacoes = professor.avaliacao_set.all()
-    media_nota = avaliacoes.aggregate(Avg('nota'))['nota__avg'] or 0
+    avaliacoes = Avaliacao.objects.filter(
+        disciplina_pessoa__pessoa=professor.user
+    ).prefetch_related('categorias_avaliacao')
+    
+    # Média das notas nas categorias das avaliações do professor:
+    media_nota = avaliacoes.aggregate(
+        media=Avg('categorias_avaliacao__nota')
+    )['media'] or 0
+
     return render(request, 'avaliacoes/detalhes_professor.html', {
         'professor': professor,
         'avaliacoes': avaliacoes,
@@ -103,22 +119,33 @@ def detalhes_professor(request, professor_id):
 @staff_member_required
 def admin_cadastro(request):
     if request.method == 'POST':
-        materia_form = MateriaForm(request.POST, prefix='materia')
-        professor_form = ProfessorForm(request.POST, request.FILES, prefix='professor')
-        user_form = UserForm(request.POST, prefix='user')
+        if 'submit_materia' in request.POST:
+            materia_form = MateriaForm(request.POST, prefix='materia')
+            professor_form = ProfessorForm(prefix='professor')
+            user_form = UserForm(prefix='user')
+            if materia_form.is_valid():
+                materia_form.save()
+                messages.success(request, 'Matéria cadastrada com sucesso!')
+                return redirect('admin_cadastro')
 
-        if materia_form.is_valid():
-            materia_form.save()
-            messages.success(request, 'Matéria cadastrada com sucesso!')
-            return redirect('admin_cadastro')
-        elif professor_form.is_valid():
-            professor_form.save()
-            messages.success(request, 'Professor cadastrado com sucesso!')
-            return redirect('admin_cadastro')
-        elif user_form.is_valid():
-            user_form.save()
-            messages.success(request, 'Usuário cadastrado com sucesso!')
-            return redirect('admin_cadastro')
+        elif 'submit_professor' in request.POST:
+            materia_form = MateriaForm(prefix='materia')
+            professor_form = ProfessorForm(request.POST, request.FILES, prefix='professor')
+            user_form = UserForm(prefix='user')
+            if professor_form.is_valid():
+                professor_form.save()
+                messages.success(request, 'Professor cadastrado com sucesso!')
+                return redirect('admin_cadastro')
+
+        elif 'submit_usuario' in request.POST:
+            materia_form = MateriaForm(prefix='materia')
+            professor_form = ProfessorForm(prefix='professor')
+            user_form = UserForm(request.POST, prefix='user')
+            if user_form.is_valid():
+                user_form.save()
+                messages.success(request, 'Usuário cadastrado com sucesso!')
+                return redirect('admin_cadastro')
+
     else:
         materia_form = MateriaForm(prefix='materia')
         professor_form = ProfessorForm(prefix='professor')
@@ -130,4 +157,5 @@ def admin_cadastro(request):
         'user_form': user_form,
     }
     return render(request, 'avaliacoes/admin_cadastro.html', context)
+
  

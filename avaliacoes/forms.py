@@ -74,7 +74,10 @@ User = get_user_model()
 class MateriaForm(forms.ModelForm):
     class Meta:
         model = Materia
-        fields = ['nome']
+        fields = ['nome', 'codigo', 'data_inicio']
+        widgets = {
+            'data_inicio': forms.DateInput(attrs={'type': 'date'})  # campo de data manual
+        }
 
 class ProfessorForm(forms.ModelForm):
     class Meta:

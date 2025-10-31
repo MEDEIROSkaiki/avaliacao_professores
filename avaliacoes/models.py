@@ -17,7 +17,6 @@ class CustomUser(AbstractUser):
     def __str__(self):
         return self.username
 
-
 class Materia(models.Model):
     nome = models.CharField(max_length=100)
     codigo = models.CharField(max_length=20, unique=True)
@@ -26,7 +25,6 @@ class Materia(models.Model):
     def __str__(self):
         return f"{self.codigo} - {self.nome}"
 
-
 class Professor(models.Model):
     user = models.OneToOneField(CustomUser, on_delete=models.CASCADE, limit_choices_to={'user_type': 'professor'})
     foto = models.ImageField(upload_to='professores_fotos/', blank=True, null=True)
@@ -34,13 +32,11 @@ class Professor(models.Model):
     def __str__(self):
         return self.user.get_full_name() or self.user.username
 
-
 class Aluno(models.Model):
     user = models.OneToOneField(CustomUser, on_delete=models.CASCADE, limit_choices_to={'user_type': 'aluno'})
 
     def __str__(self):
         return self.user.get_full_name() or self.user.username
-
 
 class DisciplinaPessoa(models.Model):
     STATUS_CHOICES = [
@@ -49,7 +45,7 @@ class DisciplinaPessoa(models.Model):
     ]
 
     disciplina = models.ForeignKey('Materia', on_delete=models.CASCADE)
-    pessoa = models.ForeignKey('CustomUser', on_delete=models.CASCADE)
+    pessoa = models.ForeignKey('CustomUser', on_delete=models.CASCADE, related_name='disciplinas_pessoa')
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='ativo')
 
     class Meta:
@@ -58,25 +54,22 @@ class DisciplinaPessoa(models.Model):
     def __str__(self):
         return f"{self.pessoa} - {self.disciplina}"
 
-
-
 class Categoria(models.Model):
     nome_categoria = models.CharField(max_length=50)
 
     def __str__(self):
         return self.nome_categoria
 
-
 class Avaliacao(models.Model):
-    disciplina_pessoa = models.ForeignKey(DisciplinaPessoa, on_delete=models.CASCADE, null=True, blank=True)
+    disciplina_pessoa = models.ForeignKey(DisciplinaPessoa, on_delete=models.CASCADE, null=True, blank=True, related_name='avaliacoes')
     data_avaliacao = models.DateTimeField(auto_now_add=True)
+    comentario = models.TextField(null=True, blank=True)
 
     def __str__(self):
         return f"Avaliação {self.id} - {self.disciplina_pessoa}"
 
-
 class AvaliacaoCategoria(models.Model):
-    avaliacao = models.ForeignKey(Avaliacao, on_delete=models.CASCADE)
+    avaliacao = models.ForeignKey(Avaliacao, on_delete=models.CASCADE, related_name='categorias_avaliacao')
     categoria = models.ForeignKey(Categoria, on_delete=models.CASCADE)
     nota = models.DecimalField(max_digits=3, decimal_places=2)
 
@@ -86,7 +79,6 @@ class AvaliacaoCategoria(models.Model):
     def __str__(self):
         return f"{self.avaliacao} - {self.categoria.nome_categoria}: {self.nota}"
 
-
 class MediaDisciplina(models.Model):
     disciplina_pessoa = models.ForeignKey(DisciplinaPessoa, on_delete=models.CASCADE)
     media = models.DecimalField(max_digits=4, decimal_places=2)
@@ -95,7 +87,6 @@ class MediaDisciplina(models.Model):
 
     def __str__(self):
         return f"Média Disciplina {self.disciplina_pessoa}"
-
 
 class MediaDisciplinaCategoria(models.Model):
     disciplina_pessoa = models.ForeignKey(DisciplinaPessoa, on_delete=models.CASCADE)
@@ -107,7 +98,6 @@ class MediaDisciplinaCategoria(models.Model):
     def __str__(self):
         return f"{self.disciplina_pessoa} - {self.categoria.nome_categoria}"
 
-
 class MediaProfessor(models.Model):
     pessoa = models.ForeignKey(CustomUser, on_delete=models.CASCADE, limit_choices_to={'user_type': 'professor'})
     media = models.DecimalField(max_digits=4, decimal_places=2)
@@ -117,7 +107,6 @@ class MediaProfessor(models.Model):
 
     def __str__(self):
         return f"Média Professor {self.pessoa}"
-
 
 class MediaUniversidade(models.Model):
     media = models.DecimalField(max_digits=4, decimal_places=2)

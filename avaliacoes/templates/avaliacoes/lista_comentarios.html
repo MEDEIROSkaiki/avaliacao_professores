@@ -30,7 +30,7 @@
     {% if comentarios %}
         {% for c in comentarios %}
         <div class="comentario">
-            <div class="professor-nome">{{ c.professor.nome }}</div>
+            <div class="professor-nome">{{ c.disciplina_pessoa.pessoa.get_full_name }}</div>
             <div class="comentario-texto">{{ c.comentario }}</div>
         </div>
         {% endfor %}

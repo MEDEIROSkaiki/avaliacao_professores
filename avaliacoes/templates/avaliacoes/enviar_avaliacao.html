@@ -3,71 +3,61 @@
 <head>
     <title>Avaliar Professor</title>
     <style>
-        #foto-professor {
-            display: none;
-            width: 120px;
-            height: 120px;
-            object-fit: cover;
-            border: 2px solid #444;
-            margin: 10px 0;
+        body { 
+            font-family: Arial, sans-serif; 
+            background: #f6f9fc;
+        }
+        .container {
+            max-width: 530px;
+            margin: 40px auto;
+            background: #fff;
+            border-radius: 10px;
+            box-shadow: 1px 2px 12px #dde2ec;
+            padding: 35px 40px 30px 40px;
+        }
+        h1 {
+            margin-top: 0;
+            color: #23223e;
+        }
+        .form-group {
+            margin-bottom: 18px;
+        }
+        label {
+            font-weight: 600;
+        }
+        input, select, textarea {
+            width: 100%;
+            padding: 6px 10px;
+            margin-top: 2px;
+            border: 1px solid #c2c6cd;
+            border-radius: 4px;
+            background: #f4f6fa;
+        }
+        button {
+            margin-top: 15px;
+            padding: 9px 27px;
+            border: none;
+            border-radius: 4px;
+            background-color: #0b77ce;
+            color: #fff;
+            font-size: 1.02em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        button:hover {
+            background-color: #095e9f;
         }
     </style>
 </head>
 <body>
-    <h1>Avaliar Professor</h1>
-    <form method="post" enctype="multipart/form-data">
-        {% csrf_token %}
-
-        <p>
-            {{ form.professor.label_tag }}<br>
-            {{ form.professor }}
-        </p>
-
-        <p>
-            {{ form.nota.label_tag }}<br>
-            {% for radio in form.nota %}
-                {{ radio }} 
-            {% endfor %}
-        </p>
-
-        <p>
-            {{ form.comentario.label_tag }}<br>
-            {{ form.comentario }}
-        </p>
-
-        <button type="submit">Enviar Avaliação</button>
-    </form>
-
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            let select = document.getElementById('{{ form.professor.id_for_label }}');
-            let img = document.createElement('img');
-            img.id = 'foto-professor';
-            img.style.display = 'none';
-            img.style.width = '120px';
-            img.style.height = '120px';
-            img.style.objectFit = 'cover';
-            img.style.border = '2px solid #444';
-            img.style.margin = '10px 0';
-
-            select.parentNode.insertBefore(img, select.nextSibling);
-
-            function updatePhoto() {
-                let selectedOption = select.options[select.selectedIndex];
-                let fotoUrl = selectedOption.getAttribute('data-foto-url');
-                if (fotoUrl) {
-                    img.src = fotoUrl;
-                    img.style.display = 'block';
-                } else {
-                    img.style.display = 'none';
-                }
-            }
-
-            select.addEventListener('change', updatePhoto);
-
-            // Inicializa a foto ao carregar a página
-            updatePhoto();
-        });
-    </script>
+    <div class="container">
+        <h1>Avaliar Professor</h1>
+        <form method="post">
+            {% csrf_token %}
+            {{ form.as_p }}
+            <button type="submit">Enviar Avaliação</button>
+        </form>
+    </div>
 </body>
 </html>

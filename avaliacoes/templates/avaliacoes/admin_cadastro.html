@@ -30,7 +30,7 @@
         margin-bottom: 4px;
         font-weight: bold;
     }
-    input[type="text"], input[type="password"], select {
+    input[type="text"], input[type="password"], input[type="date"], select {
         width: 100%;
         padding: 8px;
         border-radius: 4px;
@@ -59,7 +59,7 @@
             {{ message }}
         {% endfor %}
     </div>
-{% endif %}
+    {% endif %}
 
 <h1>Painel de Cadastro</h1>
 <label for="cadastro-switch"><strong>Escolha o tipo de cadastro:</strong></label>
@@ -74,9 +74,19 @@
     <h2>Cadastrar Matéria</h2>
     <form method="post">
         {% csrf_token %}
-        {{ materia_form.as_p }}
-        <button type="submit">Cadastrar Matéria</button>
-    </form>
+        <div class="form-group">
+            {{ materia_form.nome.label_tag }}
+            {{ materia_form.nome }}
+        </div>
+        <div class="form-group">
+            {{ materia_form.codigo.label_tag }}
+            {{ materia_form.codigo }}
+        </div>
+        <div class="form-group">
+            {{ materia_form.data_inicio.label_tag }}
+            {{ materia_form.data_inicio }}
+        </div>
+        <button type="submit" name="submit_materia">Cadastrar Matéria</button>
 </div>
 
 <!-- Formulário de Cadastro de Professor -->
@@ -95,7 +105,7 @@
     <form method="post">
         {% csrf_token %}
         {{ user_form.as_p }}
-        <button type="submit">Cadastrar Usuário</button>
+        <button type="submit" name="submit_usuario">Cadastrar Usuário</button>
     </form>
 </div>
 
