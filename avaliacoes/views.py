@@ -1,11 +1,14 @@
 from django.shortcuts import render, redirect, get_object_or_404
-from .forms import AvaliacaoForm
-from .models import Avaliacao
-from .models import Professor
+from .forms import AvaliacaoForm, MateriaForm, ProfessorForm, UserForm
+from .models import Avaliacao, Professor
 from django.db.models import Avg
 import json
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
+from django.contrib.admin.views.decorators import staff_member_required
+from .forms import CustomUserCreationForm, CustomUserChangeForm
+from django.contrib import messages
+
 
 @login_required(login_url='login')
 def home(request):
@@ -96,3 +99,35 @@ def detalhes_professor(request, professor_id):
         'avaliacoes': avaliacoes,
         'media_nota': media_nota,
     })
+
+@staff_member_required
+def admin_cadastro(request):
+    if request.method == 'POST':
+        materia_form = MateriaForm(request.POST, prefix='materia')
+        professor_form = ProfessorForm(request.POST, request.FILES, prefix='professor')
+        user_form = UserForm(request.POST, prefix='user')
+
+        if materia_form.is_valid():
+            materia_form.save()
+            messages.success(request, 'Matéria cadastrada com sucesso!')
+            return redirect('admin_cadastro')
+        elif professor_form.is_valid():
+            professor_form.save()
+            messages.success(request, 'Professor cadastrado com sucesso!')
+            return redirect('admin_cadastro')
+        elif user_form.is_valid():
+            user_form.save()
+            messages.success(request, 'Usuário cadastrado com sucesso!')
+            return redirect('admin_cadastro')
+    else:
+        materia_form = MateriaForm(prefix='materia')
+        professor_form = ProfessorForm(prefix='professor')
+        user_form = UserForm(prefix='user')
+
+    context = {
+        'materia_form': materia_form,
+        'professor_form': professor_form,
+        'user_form': user_form,
+    }
+    return render(request, 'avaliacoes/admin_cadastro.html', context)
+ 

@@ -17,6 +17,8 @@ urlpatterns = [
 
     path('dashboard_grafico/', views.dashboard_grafico, name='dashboard_grafico'),
     path('comentarios/', views.lista_comentarios, name='lista_comentarios'),
+    path('painel/admin_cadastro/', views.admin_cadastro, name='admin_cadastro'),
+
 ]
 
 if settings.DEBUG:

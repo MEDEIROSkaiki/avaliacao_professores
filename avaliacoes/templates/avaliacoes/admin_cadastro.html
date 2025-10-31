@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8" />
+<title>Painel de Cadastro Administrativo</title>
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        padding: 20px;
+        background-color: #f4f4f4;
+        color: #333;
+    }
+    h1, h2 {
+        text-align: center;
+        margin-bottom: 20px;
+        color: #2c3e50;
+    }
+    form {
+        background: #fff;
+        padding: 15px;
+        margin-bottom: 30px;
+        border-radius: 8px;
+        box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    .form-group {
+        margin-bottom: 12px;
+    }
+    label {
+        display: block;
+        margin-bottom: 4px;
+        font-weight: bold;
+    }
+    input[type="text"], input[type="password"], select {
+        width: 100%;
+        padding: 8px;
+        border-radius: 4px;
+        border: 1px solid #ccc;
+    }
+    button {
+        display: block;
+        width: 100%;
+        padding: 10px;
+        background-color: #2ecc71;
+        color: #fff;
+        font-size: 1em;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+    }
+    button:hover {
+        background-color: #27ae60;
+    }
+</style>
+</head>
+<body>
+    {% if messages %}
+    <div style="background: #dff0d8; color: #3c763d; border-radius: 6px; padding: 12px; margin-bottom: 16px; text-align:center;">
+        {% for message in messages %}
+            {{ message }}
+        {% endfor %}
+    </div>
+{% endif %}
+
+<h1>Painel de Cadastro</h1>
+<label for="cadastro-switch"><strong>Escolha o tipo de cadastro:</strong></label>
+<select id="cadastro-switch" style="margin-bottom:20px; padding:8px;">
+    <option value="materia">Matéria</option>
+    <option value="professor">Professor</option>
+    <option value="usuario">Usuário</option>
+</select>
+
+<!-- Formulário de Cadastro de Matéria -->
+<div id="form-materia">
+    <h2>Cadastrar Matéria</h2>
+    <form method="post">
+        {% csrf_token %}
+        {{ materia_form.as_p }}
+        <button type="submit">Cadastrar Matéria</button>
+    </form>
+</div>
+
+<!-- Formulário de Cadastro de Professor -->
+<div id="form-professor" style="display:none;">
+    <h2>Cadastrar Professor</h2>
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        {{ professor_form.as_p }}
+        <button type="submit">Cadastrar Professor</button>
+    </form>
+</div>
+
+<!-- Formulário de Cadastro de Usuário -->
+<div id="form-usuario" style="display:none;">
+    <h2>Cadastrar Usuário</h2>
+    <form method="post">
+        {% csrf_token %}
+        {{ user_form.as_p }}
+        <button type="submit">Cadastrar Usuário</button>
+    </form>
+</div>
+
+<script>
+document.getElementById('cadastro-switch').addEventListener('change', function() {
+    document.getElementById('form-materia').style.display = 'none';
+    document.getElementById('form-professor').style.display = 'none';
+    document.getElementById('form-usuario').style.display = 'none';
+    var value = this.value;
+    if(value === 'materia') document.getElementById('form-materia').style.display = '';
+    if(value === 'professor') document.getElementById('form-professor').style.display = '';
+    if(value === 'usuario') document.getElementById('form-usuario').style.display = '';
+});
+// Exibir o formulário de matéria por padrão ao carregar a página
+window.onload = function() {
+    document.getElementById('form-materia').style.display = '';
+    document.getElementById('form-professor').style.display = 'none';
+    document.getElementById('form-usuario').style.display = 'none';
+}
+</script>
+
+</body>
+</html>
