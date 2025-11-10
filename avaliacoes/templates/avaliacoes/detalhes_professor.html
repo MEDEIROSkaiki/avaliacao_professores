@@ -1,36 +1,82 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Detalhes do Professor {{ professor.nome }}</title>
-    <style>
-        .container { max-width: 700px; margin: auto; font-family: Arial, sans-serif; }
-        .foto { width: 150px; height: 150px; object-fit: cover; border-radius: 10px; }
-        .titulo { font-size: 2em; margin-bottom: 10px; }
-        .media { font-style: italic; color: #333; margin-bottom: 20px; }
-        .avaliacao { border-bottom: 1px solid #ccc; padding: 10px 0; }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <h1 class="titulo">{{ professor.nome }}</h1>
-        {% if professor.foto %}
-            <img src="{{ professor.foto.url }}" alt="Foto de {{ professor.nome }}" class="foto">
-        {% endif %}
-        <p>Matéria: {{ professor.materia }}</p>
-        <p class="media">Média de Avaliações: {{ media_nota|floatformat:1 }}</p>
+{% extends 'base.html' %}
+{% load static %}
 
-        <h2>Avaliações</h2>
-        {% if avaliacoes %}
-            {% for avaliacao in avaliacoes %}
-                <div class="avaliacao">
-                    <strong>Nota:</strong> {{ avaliacao.nota }}<br>
-                    <p>{{ avaliacao.comentario }}</p>
-                    <small>{{ avaliacao.created_at|date:"d/m/Y H:i" }}</small>
+{% block content %}
+
+<main class="admin-container" style="max-width: 1000px; padding: 20px 0;">
+
+    <section class="admin-panel" style="max-width: none; width: 100%; padding: 30px;">
+        
+        <div class="professor-header-info" style="display: flex; gap: 40px;">
+            
+            <div class="professor-profile" style="flex: 0 0 250px; text-align: center;">
+                
+                <div style="width: 150px; height: 150px; border-radius: 50%; background-color: var(--cinza-claro); margin: 0 auto 15px; border: 4px solid var(--azul-marinho);">
+                    </div>
+                
+                <h2 style="font-size: 1.4rem; color: var(--azul-marinho); margin-bottom: 5px;">
+                    Prof. {{ professor.nome }}
+                </h2>
+                <p style="color: var(--verde-escuro-letras); font-size: 1rem; margin-bottom: 20px;">
+                    Banco de Dados
+                </p>
+
+                <p style="text-align: left; font-size: 0.9rem; color: var(--verde-escuro-letras);">
+                    Departamento: {{ departamento }}<br>
+                    Sala: {{ sala }}<br>
+                    Telefone: {{ telefone }}<br>
+                    Email: {{ professor.email }}<br>
+                    Área: {{ area }}
+                </p>
+            </div>
+
+            <div class="professor-chart" style="flex-grow: 1; border: 1px solid var(--cinza-claro); padding: 20px; border-radius: 8px;">
+                <h3 style="font-size: 1.2rem; color: var(--azul-marinho); margin-bottom: 20px;">Média das Avaliações</h3>
+                
+                <img src="{% static 'avaliacoes/placeholder_boxplot.png' %}" alt="Gráfico Box Plot" style="width: 100%; max-height: 250px; object-fit: contain;">
+                
+                <div class="rating-buttons" style="display: flex; justify-content: center; gap: 10px; margin-top: 20px;">
+                    {% for key, val in dados_grafico.items %}
+                    <span style="padding: 5px 10px; border-radius: 4px; background-color: var(--cinza-claro); color: var(--verde-escuro-letras); font-size: 0.85rem; font-weight: 600; cursor: pointer;">
+                        {{ key|capfirst }}
+                    </span>
+                    {% endfor %}
+                    <button class="btn" style="padding: 5px 10px; font-size: 0.85rem; background-color: var(--azul-marinho); border-radius: 4px;">Submeter</button>
                 </div>
+            </div>
+        </div>
+
+        <hr style="border: none; border-top: 1px solid var(--cinza-claro); margin: 40px 0;">
+
+        <div class="add-comment-section" style="margin-bottom: 40px;">
+            <h2 style="color: var(--azul-marinho); font-size: 1.6rem; margin-bottom: 20px;">Adicione um comentário:</h2>
+            <form method="POST" action="">
+                {% csrf_token %}
+                <textarea name="comentario" rows="5" placeholder="Digite seu comentário aqui..." style="width: 100%; padding: 15px; border: 1px solid var(--cinza-claro); border-radius: 8px; font-size: 1rem; resize: vertical; box-sizing: border-box;"></textarea>
+                <div style="text-align: right; margin-top: 10px;">
+                    <button type="submit" class="btn" style="padding: 10px 20px;">Publicar</button>
+                </div>
+            </form>
+        </div>
+
+        <div class="comments-section">
+            <h2 style="color: var(--azul-marinho); font-size: 1.6rem; margin-bottom: 25px;">Comentários</h2>
+
+            {% for comentario in comentarios %}
+            <div class="comment-item" style="border-bottom: 1px solid var(--cinza-claro); padding-bottom: 20px; margin-bottom: 20px;">
+                <p style="font-size: 0.85rem; color: var(--verde-escuro-letras); font-weight: 600; margin-bottom: 5px;">
+                    {{ comentario.data }}
+                </p>
+                <p style="color: #333; line-height: 1.6;">
+                    {{ comentario.texto }}
+                </p>
+            </div>
+            {% empty %}
+            <p style="color: var(--cinza-escuro-letras);">Nenhum comentário ainda. Seja o primeiro a avaliar!</p>
             {% endfor %}
-        {% else %}
-            <p>Sem avaliações ainda.</p>
-        {% endif %}
-    </div>
-</body>
-</html>
+        </div>
+
+    </section>
+</main>
+
+{% endblock content %}

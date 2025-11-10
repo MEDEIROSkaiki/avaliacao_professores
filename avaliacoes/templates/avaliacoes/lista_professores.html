@@ -1,83 +1,67 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Professores</title>
-    <style>
-        .container {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 16px;
-        }
-        .card {
-            border: 1px solid #999;
-            border-radius: 6px;
-            padding: 16px;
-            width: 280px;
-            background: #f9f9f9;
-            box-shadow: 2px 2px 8px #ddd;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-        .card img {
-            width: 100px;
-            height: 100px;
-            object-fit: cover;
-            margin-bottom: 10px;
-            border-radius: 6px;
-        }
-        .card-title {
-            font-size: 1.2em;
-            font-weight: bold;
-            margin-bottom: 4px;
-            text-align: center;
-        }
-        .card-materia {
-            color: #333;
-            margin-bottom: 8px;
-            text-align: center;
-        }
-        .select-button {
-            padding: 8px 16px;
-            margin-top: auto;
-            background-color: #4CAF50;
-            color: white;
-            text-decoration: none;
-            border-radius: 4px;
-            text-align: center;
-            cursor: pointer;
-            display: inline-block;
-            margin-bottom: 4px;
-        }
-    </style>
-</head>
-<body>
-    <h1>Lista de Professores</h1>
-    <div class="container">
-        {% for professor in professores %}
-        <div class="card">
+{% extends 'base.html' %}
+{% load static %}
 
-            {% if professor.foto %}
-                <img src="{{ professor.foto.url }}" alt="Foto de {{ professor.nome }}">
-            {% else %}
-                <img src="https://via.placeholder.com/100x100?text=Sem+Foto" alt="Sem foto">
-            {% endif %}
+{% block content %}
+<main class="admin-container">
+    <section class="admin-panel">
+        <h1>Lista de Professores Cadastrados</h1>
 
-            <div class="card-title">{{ professor.nome }}</div>
-            <div class="card-materia">{{ professor.materia }}</div>
-
-            {% if professor.id %}
-                <a href="{% url 'detalhes_professor' professor.id %}" class="select-button">Detalhes</a>
-            {% else %}
-                <p>ID do professor indisponível.</p>
-            {% endif %}
-
-            <a href="{% url 'enviar_avaliacao' %}?professor_id={{ professor.id }}" class="select-button">Avaliar</a>
-
+        <div style="margin-bottom: 25px; display: flex; justify-content: flex-end;">
+            <a href="{% url 'adicionar_usuario' %}" class="btn">
+                + Novo Usuário
+            </a>
         </div>
-        {% empty %}
-        <p>Nenhum professor cadastrado.</p>
-        {% endfor %}
-    </div>
-</body>
-</html>
+
+        <div class="professor-list-container">
+            <div class="list-header" style="
+                display: grid; 
+                grid-template-columns: 2fr 2fr 3fr 1fr; 
+                gap: 20px; 
+                padding: 15px 20px; 
+                border-bottom: 2px solid var(--cinza-claro); 
+                font-weight: 600; 
+                color: var(--azul-marinho);
+                background-color: var(--painel-central);
+                border-radius: 8px 8px 0 0;
+            ">
+                <span>Nome</span>
+                <span>Email</span>
+                <span>Disciplinas</span>
+                <span>Ações</span>
+            </div>
+
+            {% for professor in professores %}
+            <div class="professor-item" style="
+                display: grid; 
+                grid-template-columns: 2fr 2fr 3fr 1fr; 
+                gap: 20px; 
+                padding: 15px 20px; 
+                border-bottom: 1px solid var(--cinza-claro);
+                align-items: center;
+                color: var(--verde-escuro-letras);
+            ">
+                <div style="display: flex; align-items: center;">
+                    <i class="fas fa-user-circle" style="font-size: 30px; color: var(--azul-marinho); margin-right: 15px;"></i> 
+                    <span>{{ professor.nome }}</span>
+                </div>
+                
+                <span>{{ professor.email }}</span>
+                <span>{{ professor.disciplinas }}</span>
+
+            <div>
+                <a href="{% url 'detalhes_professor' professor.id %}" class="btn" style="
+                    padding: 8px 18px; /* Aumenta o padding horizontal */
+                    font-size: 0.9rem;
+                    white-space: nowrap; /* IMPEDE A QUEBRA DE LINHA */
+                ">
+                    Ver Detalhes
+                </a>
+            </div>
+            </div>
+            {% empty %}
+            <p style="padding: 20px; color: var(--cinza-escuro-letras);">Nenhum professor cadastrado ainda.</p>
+            {% endfor %}
+        </div>
+    </section>
+</main>
+{% endblock content %}

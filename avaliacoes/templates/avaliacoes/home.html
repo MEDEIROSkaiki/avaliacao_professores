@@ -1,36 +1,65 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Página Inicial</title>
-    <style>
-        .btn {
-            display: inline-block;
-            margin: 20px;
-            padding: 15px 30px;
-            background-color: #4CAF50;
-            color: white;
-            font-size: 18px;
-            border-radius: 6px;
-            text-decoration: none;
-            transition: background-color 0.3s ease;
-        }
-        .btn:hover {
-            background-color: #45a049;
-        }
-        body {
-            display: flex;
-            height: 100vh;
-            justify-content: center;
-            align-items: center;
-            flex-wrap: wrap;
-            font-family: Arial, sans-serif;
-        }
-    </style>
-</head>
-<body>
-    <a href="{% url 'lista_professores' %}" class="btn">Lista de Professores</a>
-    <a href="{% url 'enviar_avaliacao' %}" class="btn">Enviar Avaliação</a>
-    <a href="{% url 'dashboard_grafico' %}" class="btn">Dashboard Gráfico</a>
-    <a href="{% url 'lista_comentarios' %}" class="btn">Comentários</a>
-</body>
-</html>
+{% extends "base.html" %}
+
+{% block content %}
+<main class="home-container">
+
+    <div class="search-card">
+        <h2>Olá, [Nome do Aluno]! <br> AVALIE OU PESQUISE</h2>
+        <form action="{% url 'lista_professores' %}" method="get">
+            <input type="text" name="professor_nome" placeholder="Pesquisar por nome do professor(a)...">
+            <input type="text" name="disciplina_nome" placeholder="Pesquisar por disciplina...">
+            <button type="submit">Pesquisar</button>
+        </form>
+    </div>
+
+    <div class="average-card">
+        <div class="average-text">
+            <h3>Avaliação Geral da faculdade</h3>
+        </div>
+        
+        <div class="average-score" style="position: relative;">
+            <div class="donut-chart" style="
+                width: 100px;
+                height: 100px;
+                border-radius: 50%;
+                background: conic-gradient(var(--verde) 69%, var(--azul-marinho) 0); /* 6.9/10 = 69% */
+                display: flex;
+                align-items: center;
+                justify-content: center;">
+                
+                <div style="
+                    width: 80px;
+                    height: 80px;
+                    background-color: white;
+                    border-radius: 50%;
+                    text-align: center;
+                    padding-top: 15px;
+                    box-sizing: border-box;">
+                    <strong style="font-size: 1.5rem; color: var(--verde);">6,90</strong>
+                    <span style="font-size: 0.7rem; color: var(--cinza-escuro-letras); display: block; margin-top: -5px;">Média</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="bottom-cards-row">
+
+        <a href="/ranking" class="mini-card" style="text-decoration: none;">
+            <i class="fa-solid fa-trophy"></i>
+            <span>Ranking Geral</span>
+        </a>
+
+        <a href="/comparacao" class="mini-card" style="text-decoration: none;">
+            <i class="fa-solid fa-balance-scale"></i>
+            <span>Comparação</span>
+        </a>
+
+        <div class="mini-card">
+            <small>Avaliações Realizadas</small>
+            <strong>595659</strong>
+        </div>
+
+    </div>
+
+</main>
+{% endblock content %}

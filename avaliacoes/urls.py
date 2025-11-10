@@ -19,6 +19,12 @@ urlpatterns = [
     path('comentarios/', views.lista_comentarios, name='lista_comentarios'),
     path('painel/admin_cadastro/', views.admin_cadastro, name='admin_cadastro'),
 
+    path('disciplina/adicionar/', views.adicionar_disciplina, name='adicionar_disciplina'),
+    path('usuario/adicionar/', views.adicionar_usuario, name='adicionar_usuario'),
+    path('professores/', views.lista_professores, name='lista_professores'),
+
+    path('professores/<int:professor_id>/', views.detalhes_professor, name='detalhes_professor'),
+
 ]
 
 if settings.DEBUG:

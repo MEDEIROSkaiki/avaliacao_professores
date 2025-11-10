@@ -8,6 +8,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.admin.views.decorators import staff_member_required
 from .forms import CustomUserCreationForm, CustomUserChangeForm
 from django.contrib import messages
+from .models import Usuario, Disciplina
 
 
 @login_required(login_url='login')
@@ -158,4 +159,88 @@ def admin_cadastro(request):
     }
     return render(request, 'avaliacoes/admin_cadastro.html', context)
 
+def adicionar_aluno(request):
+    if request.method == 'POST':
+        pass
+    return render(request, 'avaliacoes/adicionar_aluno.html')
+
+def adicionar_disciplina(request):
+    if request.method == 'POST':
+        pass
+    return render(request, 'avaliacoes/adicionar_disciplina.html')
+
+def adicionar_professor(request):
+    if request.method == 'POST':
+        pass
+    return render(request, 'avaliacoes/adicionar_professor.html')
+
+def adicionar_usuario(request):
+    if request.method == 'POST':
+        tipo = request.POST.get('tipo_usuario')
+        nome = request.POST.get('nome')
+        imagem_perfil = request.FILES.get('imagem_perfil')
+        if tipo == 'aluno':
+            mensagem = f"Usuário {nome} (Aluno) cadastrado!"
+        return HttpResponse(f"Cadastro concluído. {mensagem}")
+        
+    return render(request, 'avaliacoes/adicionar_usuario.html')
  
+def lista_professores(request):
+    # NOTA: Substitua 'Professor.objects.all()' pela sua lógica de filtro, se houver.
+    # Se você estiver usando um modelo 'Usuario' com um campo 'tipo', filtre por ele:
+    # professores = Usuario.objects.filter(tipo='professor')
+    
+    # Exemplo: Se usar um modelo Professor dedicado:
+    # professores = Professor.objects.all().order_by('nome') 
+    
+    # Criando dados de exemplo, caso seus modelos ainda não estejam prontos:
+    professores_exemplo = [
+        {'id': 1, 'nome': 'Dr. João Silva', 'email': 'joao.silva@uni.edu', 'disciplinas': 'Cálculo, Álgebra Linear'},
+        {'id': 2, 'nome': 'Dra. Maria Oliveira', 'email': 'maria.o@uni.edu', 'disciplinas': 'Física 1, Mecânica'},
+        {'id': 3, 'nome': 'Prof. Pedro Costa', 'email': 'pedro.costa@uni.edu', 'disciplinas': 'Programação Web, Estrutura de Dados'},
+    ]
+    
+    context = {
+        'professores': professores_exemplo # Use 'professores' do DB quando estiver pronto
+    }
+    
+    # NOTA: O template é 'avaliacoes/lista_professores.html'
+    return render(request, 'avaliacoes/lista_professores.html', context)
+
+def detalhes_professor(request, professor_id):
+    
+    # 1. Busca o professor pelo ID (retorna 404 se não encontrar)
+    # Assumindo que o ID é o campo 'pk' do modelo Usuario
+    professor = get_object_or_404(Usuario, pk=professor_id, tipo='professor')
+    
+    # 2. Busca as avaliações/comentários relacionados ao professor (dados da parte inferior)
+    # comentarios = Avaliacao.objects.filter(professor=professor).order_by('-data')
+    
+    # 3. Cria dados fictícios para o gráfico e comentários (Se você ainda não tem os modelos)
+    
+    # Dados para o gráfico Box Plot (Aqui você faria a média das avaliações)
+    dados_grafico = {
+        'didatica': [2, 4, 6, 8, 10],
+        'dificuldade': [1, 3, 5, 7, 9],
+        'relacionamento': [5, 6, 8, 9, 10],
+        'pontualidade': [4, 7, 8, 9, 10],
+    }
+
+    comentarios_exemplo = [
+        {'data': '12/09/2020 - 10:05:34', 'texto': 'Quando explica é ótima, mas perde muito o foco da aula, muito desorganizada, grossa como já mencionei, provas não condizentes com a lista, porém sempre generosa nas correções e tenta fazer com que vc passe na matéria.'},
+        {'data': '20/06/2018 - 09:14:17', 'texto': 'expõe os alunos, é grossa desnecessariamente, porém, tem boa didática'},
+        {'data': '14/12/2017 - 17:51:53', 'texto': 'Provas muito difíceis, e não condizentes com as listas.'},
+    ]
+
+    context = {
+        'professor': professor,
+        'dados_grafico': dados_grafico,
+        'comentarios': comentarios_exemplo, # Substitua por 'comentarios' do DB
+        # Dados Fictícios do Professor (Se o seu modelo Usuario não tiver todos esses campos)
+        'departamento': 'Ciência da Computação', 
+        'sala': '153A',
+        'telefone': '(11) 3091-8898',
+        'area': 'Álgebra Booleana'
+    }
+
+    return render(request, 'avaliacoes/detalhes_professor.html', context)
