@@ -1,4 +1,3 @@
-from .models import CustomUser, Professor
 from django.shortcuts import render, redirect, get_object_or_404
 from django.http import HttpResponse
 from .forms import AvaliacaoForm, MateriaForm, ProfessorForm, UserForm
@@ -12,6 +11,11 @@ from .forms import CustomUserCreationForm, CustomUserChangeForm
 from django.contrib import messages
 from datetime import datetime
 from .models import CustomUser, Professor, Materia, DisciplinaPessoa
+from django.contrib import messages
+from datetime import datetime
+from .models import CustomUser, Materia, DisciplinaPessoa, Professor, Aluno
+from django.core.validators import validate_email # <-- NOVO: Para validar o formato do email
+from django.core.exceptions import ValidationError # <-- NOVO: Para capturar o erro do validate_email
 
 @login_required(login_url='login')
 def home(request):
@@ -182,6 +186,7 @@ def adicionar_professor(request):
 
 def adicionar_usuario(request):
     if request.method == 'POST':
+        # --- 1. CAPTURA DOS DADOS ---
         tipo = request.POST.get('tipo_usuario')
         nome = request.POST.get('nome')
         email = request.POST.get('email')
@@ -190,23 +195,52 @@ def adicionar_usuario(request):
         imagem_perfil = request.FILES.get('imagem_perfil')
         senha = 'mudaragora' 
 
-        # --- Processamento dos dados ---
-        nome_completo_lista = nome.split(' ')
-        first_name = nome_completo_lista[0] if nome_completo_lista else ''
-        last_name = ' '.join(nome_completo_lista[1:]) if len(nome_completo_lista) > 1 else ''
+        # --- 2. BLOCO DE VALIDAÇÃO (O QUE VOCÊ PEDIU) ---
 
+        # 2a. Validação do Email (Formato e Unicidade)
+        try:
+            validate_email(email)
+        except ValidationError:
+            messages.error(request, "Email inválido. Por favor, insira um email válido.")
+            return redirect('adicionar_usuario')
+        
+        if CustomUser.objects.filter(email=email).exists():
+            messages.error(request, "Email já cadastrado. Por favor, utilize outro email.")
+            return redirect('adicionar_usuario')
+
+        # 2b. Validação do CPF (Formato e Unicidade)
+        # (Se você precisar de uma validação de CPF *real*, precisará de uma biblioteca, 
+        # mas por enquanto vamos validar o formato e a unicidade)
+        if not cpf or not cpf.isdigit() or len(cpf) != 11:
+            messages.error(request, "CPF inválido. Deve conter exatamente 11 dígitos numéricos.")
+            return redirect('adicionar_usuario')
+
+        if CustomUser.objects.filter(cpf=cpf).exists():
+            messages.error(request, "CPF já cadastrado. Por favor, utilize outro CPF.")
+            return redirect('adicionar_usuario')
+
+        # 2c. Validação da Data de Nascimento
         data_nascimento_obj = None
         if data_nascimento_str:
             try:
                 data_nascimento_obj = datetime.strptime(data_nascimento_str, '%d/%m/%Y').date()
             except ValueError:
-                messages.error(request, "Erro: O formato da Data de Nascimento deve ser DD/MM/AAAA.")
-                return redirect('adicionar_usuario') 
+                messages.error(request, "Data de Nascimento inválida. O formato deve ser DD/MM/AAAA.")
+                return redirect('adicionar_usuario')
+        else:
+            # Se a data for obrigatória, adicione este 'else'
+            messages.error(request, "Data de Nascimento é um campo obrigatório.")
+            return redirect('adicionar_usuario')
 
-        # --- Lógica de Cadastro ---
+        # --- 3. PROCESSAMENTO E SALVAMENTO (Se todas as validações passaram) ---
+
+        nome_completo_lista = nome.split(' ')
+        first_name = nome_completo_lista[0] if nome_completo_lista else ''
+        last_name = ' '.join(nome_completo_lista[1:]) if len(nome_completo_lista) > 1 else ''
+
         if tipo == 'professor':
             try:
-                # 1. Criação do CustomUser
+                # 3a. Criação do CustomUser
                 novo_user = CustomUser.objects.create_user(
                     username=email, 
                     email=email,
@@ -219,34 +253,26 @@ def adicionar_usuario(request):
                     last_name=last_name
                 )
                 
-                # 2. Criação do Perfil Professor
+                # 3b. Criação do Perfil Professor
                 Professor.objects.create(
                     user=novo_user,
                     foto=imagem_perfil
                 )
                 
-                # 3. Sucesso
+                # 3c. Sucesso
                 messages.success(request, f"Professor {nome} cadastrado com sucesso!")
                 return redirect('lista_professores')
 
             except Exception as e:
-                # 🔴 NOVO BLOCO DE ERRO 🔴
-                # Agora o erro do banco de dados será exibido na página!
-                
-                # Também imprimimos no console para garantir
-                print(f"❌ ERRO AO SALVAR: {e}") 
-                
-                # Formata a mensagem de erro para a web
-                error_message = f"Erro ao cadastrar ({type(e).__name__}): {e}"
-                
-                # Envia o erro para o template
-                messages.error(request, error_message)
+                # 3d. Falha (Segurança final, caso algo tenha passado)
+                messages.error(request, f"Erro interno ao salvar o professor: {e}")
                 return redirect('adicionar_usuario') 
 
         elif tipo == 'aluno':
             messages.error(request, "Cadastro de Aluno ainda não implementado.")
             return redirect('adicionar_usuario') 
             
+    # Se for um GET
     return render(request, 'avaliacoes/adicionar_usuario.html')
  
 def detalhes_professor(request, professor_id):
