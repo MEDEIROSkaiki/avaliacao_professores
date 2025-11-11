@@ -1,3 +1,4 @@
+from .models import CustomUser
 from django.shortcuts import render, redirect, get_object_or_404
 from .forms import AvaliacaoForm, MateriaForm, ProfessorForm, UserForm
 from .models import Avaliacao, Professor
@@ -8,8 +9,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.admin.views.decorators import staff_member_required
 from .forms import CustomUserCreationForm, CustomUserChangeForm
 from django.contrib import messages
-from .models import Usuario, Disciplina
-
+from .models import CustomUser, Materia, DisciplinaPessoa
 
 @login_required(login_url='login')
 def home(request):
@@ -211,7 +211,7 @@ def detalhes_professor(request, professor_id):
     
     # 1. Busca o professor pelo ID (retorna 404 se não encontrar)
     # Assumindo que o ID é o campo 'pk' do modelo Usuario
-    professor = get_object_or_404(Usuario, pk=professor_id, tipo='professor')
+    professor = get_object_or_404(CustomUser, pk=professor_id, user_type='professor')
     
     # 2. Busca as avaliações/comentários relacionados ao professor (dados da parte inferior)
     # comentarios = Avaliacao.objects.filter(professor=professor).order_by('-data')
