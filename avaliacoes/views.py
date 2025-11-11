@@ -1,5 +1,6 @@
-from .models import CustomUser
+from .models import CustomUser, Professor
 from django.shortcuts import render, redirect, get_object_or_404
+from django.http import HttpResponse
 from .forms import AvaliacaoForm, MateriaForm, ProfessorForm, UserForm
 from .models import Avaliacao, Professor
 from django.db.models import Avg
@@ -9,7 +10,8 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.admin.views.decorators import staff_member_required
 from .forms import CustomUserCreationForm, CustomUserChangeForm
 from django.contrib import messages
-from .models import CustomUser, Materia, DisciplinaPessoa
+from datetime import datetime
+from .models import CustomUser, Professor, Materia, DisciplinaPessoa
 
 @login_required(login_url='login')
 def home(request):
@@ -174,39 +176,79 @@ def adicionar_professor(request):
         pass
     return render(request, 'avaliacoes/adicionar_professor.html')
 
+# ... (restante das views, como adicionar_disciplina, adicionar_professor, etc.)
+
+# SEU ARQUIVO: avaliacoes/views.py
+
 def adicionar_usuario(request):
     if request.method == 'POST':
         tipo = request.POST.get('tipo_usuario')
         nome = request.POST.get('nome')
+        email = request.POST.get('email')
+        cpf = request.POST.get('cpf')
+        data_nascimento_str = request.POST.get('nascimento')
         imagem_perfil = request.FILES.get('imagem_perfil')
-        if tipo == 'aluno':
-            mensagem = f"Usuário {nome} (Aluno) cadastrado!"
-        return HttpResponse(f"Cadastro concluído. {mensagem}")
-        
+        senha = 'mudaragora' 
+
+        # --- Processamento dos dados ---
+        nome_completo_lista = nome.split(' ')
+        first_name = nome_completo_lista[0] if nome_completo_lista else ''
+        last_name = ' '.join(nome_completo_lista[1:]) if len(nome_completo_lista) > 1 else ''
+
+        data_nascimento_obj = None
+        if data_nascimento_str:
+            try:
+                data_nascimento_obj = datetime.strptime(data_nascimento_str, '%d/%m/%Y').date()
+            except ValueError:
+                messages.error(request, "Erro: O formato da Data de Nascimento deve ser DD/MM/AAAA.")
+                return redirect('adicionar_usuario') 
+
+        # --- Lógica de Cadastro ---
+        if tipo == 'professor':
+            try:
+                # 1. Criação do CustomUser
+                novo_user = CustomUser.objects.create_user(
+                    username=email, 
+                    email=email,
+                    password=senha,
+                    user_type='professor', 
+                    cpf=cpf,
+                    data_nascimento=data_nascimento_obj,
+                    is_active=True,
+                    first_name=first_name,
+                    last_name=last_name
+                )
+                
+                # 2. Criação do Perfil Professor
+                Professor.objects.create(
+                    user=novo_user,
+                    foto=imagem_perfil
+                )
+                
+                # 3. Sucesso
+                messages.success(request, f"Professor {nome} cadastrado com sucesso!")
+                return redirect('lista_professores')
+
+            except Exception as e:
+                # 🔴 NOVO BLOCO DE ERRO 🔴
+                # Agora o erro do banco de dados será exibido na página!
+                
+                # Também imprimimos no console para garantir
+                print(f"❌ ERRO AO SALVAR: {e}") 
+                
+                # Formata a mensagem de erro para a web
+                error_message = f"Erro ao cadastrar ({type(e).__name__}): {e}"
+                
+                # Envia o erro para o template
+                messages.error(request, error_message)
+                return redirect('adicionar_usuario') 
+
+        elif tipo == 'aluno':
+            messages.error(request, "Cadastro de Aluno ainda não implementado.")
+            return redirect('adicionar_usuario') 
+            
     return render(request, 'avaliacoes/adicionar_usuario.html')
  
-def lista_professores(request):
-    # NOTA: Substitua 'Professor.objects.all()' pela sua lógica de filtro, se houver.
-    # Se você estiver usando um modelo 'Usuario' com um campo 'tipo', filtre por ele:
-    # professores = Usuario.objects.filter(tipo='professor')
-    
-    # Exemplo: Se usar um modelo Professor dedicado:
-    # professores = Professor.objects.all().order_by('nome') 
-    
-    # Criando dados de exemplo, caso seus modelos ainda não estejam prontos:
-    professores_exemplo = [
-        {'id': 1, 'nome': 'Dr. João Silva', 'email': 'joao.silva@uni.edu', 'disciplinas': 'Cálculo, Álgebra Linear'},
-        {'id': 2, 'nome': 'Dra. Maria Oliveira', 'email': 'maria.o@uni.edu', 'disciplinas': 'Física 1, Mecânica'},
-        {'id': 3, 'nome': 'Prof. Pedro Costa', 'email': 'pedro.costa@uni.edu', 'disciplinas': 'Programação Web, Estrutura de Dados'},
-    ]
-    
-    context = {
-        'professores': professores_exemplo # Use 'professores' do DB quando estiver pronto
-    }
-    
-    # NOTA: O template é 'avaliacoes/lista_professores.html'
-    return render(request, 'avaliacoes/lista_professores.html', context)
-
 def detalhes_professor(request, professor_id):
     
     # 1. Busca o professor pelo ID (retorna 404 se não encontrar)
@@ -244,3 +286,13 @@ def detalhes_professor(request, professor_id):
     }
 
     return render(request, 'avaliacoes/detalhes_professor.html', context)
+
+@login_required(login_url='login')
+def lista_professores(request):
+    # Esta linha busca os professores REAIS do banco de dados
+    professores = Professor.objects.annotate(
+        media_nota=Avg('user__disciplinas_pessoa__avaliacoes__categorias_avaliacao__nota')
+    ).filter(id__isnull=False)
+
+    # E aqui ela envia os professores REAIS para o template
+    return render(request, 'avaliacoes/lista_professores.html', {'professores': professores})

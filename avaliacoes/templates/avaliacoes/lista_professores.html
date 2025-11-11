@@ -40,28 +40,32 @@
                 align-items: center;
                 color: var(--verde-escuro-letras);
             ">
+                
                 <div style="display: flex; align-items: center;">
                     <i class="fas fa-user-circle" style="font-size: 30px; color: var(--azul-marinho); margin-right: 15px;"></i> 
-                    <span>{{ professor.nome }}</span>
+                    
+                    <span>{{ professor.user.first_name }} {{ professor.user.last_name }}</span>
                 </div>
                 
-                <span>{{ professor.email }}</span>
+                <span>{{ professor.user.email }}</span>
+
                 <span>{{ professor.disciplinas }}</span>
 
-            <div>
-                <a href="{% url 'detalhes_professor' professor.id %}" class="btn" style="
-                    padding: 8px 18px; /* Aumenta o padding horizontal */
-                    font-size: 0.9rem;
-                    white-space: nowrap; /* IMPEDE A QUEBRA DE LINHA */
-                ">
-                    Ver Detalhes
-                </a>
-            </div>
+                <div>
+                    <a href="{% url 'detalhes_professor' professor.id %}" class="btn" style="
+                        padding: 8px 18px;
+                        font-size: 0.9rem;
+                        white-space: nowrap;
+                    ">
+                        Ver Detalhes
+                    </a>
+                </div>
             </div>
             {% empty %}
-            <p style="padding: 20px; color: var(--cinza-escuro-letras);">Nenhum professor cadastrado ainda.</p>
+                <p style="padding: 20px; color: var(--cinza-escuro-letras);">Nenhum professor cadastrado ainda.</p>
             {% endfor %}
-        </div>
+            
+            </div>
     </section>
 </main>
 {% endblock content %}
