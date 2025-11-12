@@ -24,7 +24,7 @@
                 <select id="materia_disciplina" name="materia_disciplina">
                     <option value="" disabled selected>Selecione a Disciplina</option>
                     {% for materia in materias %}
-                        <option value="{{ materia.id }}">{{ materia.nome }} ({{ materia.codigo }})</option>
+                        <option value="{{ materia.id }}">{{ materia.nome }}</option>
                     {% endfor %}
                 </select>
             </div>
