@@ -45,7 +45,7 @@
                 <input type="text" id="nascimento" name="nascimento" placeholder="Data de Nascimento (DD/MM/AAAA)">
             </div>
 
-            <div class="form-group">
+            <div class="form-group" id="campo_foto_perfil" style="display: none;">
                 <label for="imagem_perfil" style="display: block; margin-bottom: 5px; font-weight: 500; color: var(--azul-marinho);">
                     Foto de Perfil (Opcional)
                 </label>
@@ -68,19 +68,22 @@
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        // Pega os dois elementos que vamos usar
+        // Pega os três elementos que vamos usar
         const tipoUsuarioSelect = document.getElementById('tipo_usuario');
         const campoDisciplinaDiv = document.getElementById('campo_disciplina');
+        const campoFotoDiv = document.getElementById('campo_foto_perfil'); // <-- NOVO
 
         // Adiciona um "ouvinte" de mudança no select 'tipo_usuario'
         tipoUsuarioSelect.addEventListener('change', function() {
             // Se o valor selecionado for 'professor'...
             if (this.value === 'professor') {
-                // Mostra o campo de disciplina
+                // Mostra AMBOS os campos
                 campoDisciplinaDiv.style.display = 'block';
+                campoFotoDiv.style.display = 'block'; // <-- NOVO
             } else {
-                // Se for qualquer outro valor, esconde
+                // Se for Aluno ou Admin, esconde AMBOS os campos
                 campoDisciplinaDiv.style.display = 'none';
+                campoFotoDiv.style.display = 'none'; // <-- NOVO
             }
         });
     });
