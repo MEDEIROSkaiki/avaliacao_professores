@@ -162,6 +162,17 @@ def adicionar_professor(request):
         pass
     return render(request, 'avaliacoes/adicionar_professor.html')
 
+# ... (restante das views, como adicionar_disciplina, adicionar_professor, etc.)
+
+# SEU ARQUIVO: avaliacoes/views.py
+
+# No topo do seu views.py, garanta que get_object_or_404 está importado:
+from django.shortcuts import render, redirect, get_object_or_404
+# ...e que todos os seus models estão importados:
+from .models import CustomUser, Materia, DisciplinaPessoa, Professor, Aluno
+# ...outros imports...
+
+@staff_member_required 
 def adicionar_usuario(request):
     if request.method == 'POST':
         # --- 1. CAPTURA DOS DADOS ---
@@ -172,15 +183,26 @@ def adicionar_usuario(request):
         data_nascimento_str = request.POST.get('nascimento')
         imagem_perfil = request.FILES.get('imagem_perfil')
         senha = 'mudaragora' 
+        
+        # NOVO: Captura do ID da matéria
+        materia_id = request.POST.get('materia_disciplina')
 
-        # --- 2. BLOCO DE VALIDAÇÃO (O QUE VOCÊ PEDIU) ---
-
-        # 2a. Validação do Email (Formato e Unicidade)
+        # --- 2. BLOCO DE VALIDAÇÃO (AJUSTADO) ---
+        if not tipo:
+            messages.error(request, "O campo 'Tipo de Usuário' é obrigatório.")
+            return redirect('adicionar_usuario') # NOVO: Redireciona em vez de renderizar
+        if not nome:
+            messages.error(request, "O campo 'Nome Completo' é obrigatório.")
+            return redirect('adicionar_usuario')
+        if not email:
+            messages.error(request, "O campo 'Email (login)' é obrigatório.")
+            return redirect('adicionar_usuario')
+            
         try:
             validate_email(email)
         except ValidationError:
             messages.error(request, "Email inválido. Por favor, insira um email válido.")
-            return redirect('adicionar_usuario')
+            return redirect('adicionar_usuario') 
         
         if CustomUser.objects.filter(email=email).exists():
             messages.error(request, "Email já cadastrado. Por favor, utilize outro email.")
@@ -195,7 +217,6 @@ def adicionar_usuario(request):
             messages.error(request, "CPF já cadastrado. Por favor, utilize outro CPF.")
             return redirect('adicionar_usuario')
 
-        # 2c. Validação da Data de Nascimento
         data_nascimento_obj = None
         if data_nascimento_str:
             try:
@@ -206,58 +227,84 @@ def adicionar_usuario(request):
         else:
             messages.error(request, "Data de Nascimento é um campo obrigatório.")
             return redirect('adicionar_usuario')
+            
+        # NOVO: Validação de Matéria (apenas se for professor)
+        materia_obj = None
+        if tipo == 'professor':
+            if not materia_id:
+                messages.error(request, "Para cadastrar um Professor, a disciplina é obrigatória.")
+                return redirect('adicionar_usuario')
+            try:
+                materia_obj = Materia.objects.get(pk=materia_id)
+            except Materia.DoesNotExist:
+                messages.error(request, "Disciplina selecionada inválida.")
+                return redirect('adicionar_usuario')
 
-        # --- 3. PROCESSAMENTO E SALVAMENTO (Se todas as validações passaram) ---
-
+        # --- 3. PROCESSAMENTO E SALVAMENTO ---
         nome_completo_lista = nome.split(' ')
         first_name = nome_completo_lista[0] if nome_completo_lista else ''
         last_name = ' '.join(nome_completo_lista[1:]) if len(nome_completo_lista) > 1 else ''
 
-        if tipo == 'professor':
-            try:
-                # 3a. Criação do CustomUser
-                novo_user = CustomUser.objects.create_user(
-                    username=email, 
-                    email=email,
-                    password=senha,
-                    user_type='professor', 
-                    cpf=cpf,
-                    data_nascimento=data_nascimento_obj,
-                    is_active=True,
-                    first_name=first_name,
-                    last_name=last_name
-                )
-                
-                # 3b. Criação do Perfil Professor
+        try:
+            novo_user = CustomUser.objects.create_user(
+                username=email, 
+                email=email,
+                password=senha,
+                user_type=tipo, 
+                cpf=cpf,
+                data_nascimento=data_nascimento_obj,
+                is_active=True,
+                first_name=first_name,
+                last_name=last_name
+            )
+        except Exception as e:
+            messages.error(request, f"Erro interno ao criar o usuário base: {e}")
+            return redirect('adicionar_usuario')
+
+        try:
+            if tipo == 'professor':
                 Professor.objects.create(
                     user=novo_user,
                     foto=imagem_perfil
                 )
-                
-                # 3c. Sucesso
+                # NOVO: Cria o link entre o professor (pessoa) e a disciplina
+                DisciplinaPessoa.objects.create(
+                    disciplina=materia_obj,
+                    pessoa=novo_user
+                    # status='ativo' será pego do default do model
+                )
                 messages.success(request, f"Professor {nome} cadastrado com sucesso!")
-                return redirect('lista_professores')
+                return redirect('lista_professores') 
 
-            except Exception as e:
-                # 3d. Falha (Segurança final, caso algo tenha passado)
-                messages.error(request, f"Erro interno ao salvar o professor: {e}")
+            elif tipo == 'aluno':
+                Aluno.objects.create(
+                    user=novo_user
+                )
+                messages.success(request, f"Aluno {nome} cadastrado com sucesso!")
                 return redirect('adicionar_usuario') 
-
-        elif tipo == 'aluno':
-            # (Implementar lógica de criação de Aluno aqui, similar ao Professor)
-            messages.error(request, "Cadastro de Aluno ainda não implementado.")
-            return redirect('adicionar_usuario') 
             
-    # Se for um GET
-    return render(request, 'avaliacoes/adicionar_usuario.html')
+            elif tipo == 'administrador':
+                novo_user.is_staff = True
+                novo_user.is_superuser = True 
+                novo_user.save()
+                messages.success(request, f"Administrador {nome} cadastrado com sucesso!")
+                return redirect('adicionar_usuario')
 
-# ==================================================================
-# === NOVAS VIEWS CORRIGIDAS ABAIXO ================================
-# ==================================================================
+        except Exception as e:
+            novo_user.delete() 
+            messages.error(request, f"Erro interno ao salvar o perfil do usuário: {e}")
+            return redirect('adicionar_usuario') 
 
-# Em avaliacoes/views.py
-
-@login_required(login_url='login')
+    # --- Se for um GET (Carregamento da página) ---
+    # NOVO: Buscar todas as matérias para o dropdown
+    materias = Materia.objects.all().order_by('nome')
+    context = {
+        'materias': materias
+    }
+    return render(request, 'avaliacoes/adicionar_usuario.html', context)
+            
+    
+    
 def detalhes_professor(request, professor_id):
     # 1. Busca o professor
     professor = get_object_or_404(Professor, pk=professor_id)
