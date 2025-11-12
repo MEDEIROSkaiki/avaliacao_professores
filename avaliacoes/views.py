@@ -1,7 +1,12 @@
+# avaliacoes/views.py
+
 from django.shortcuts import render, redirect, get_object_or_404
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 from .forms import AvaliacaoForm, MateriaForm, ProfessorForm, UserForm
-from .models import Avaliacao, Professor
+from .models import (
+    Avaliacao, Professor, CustomUser, Materia, DisciplinaPessoa, 
+    Aluno, Categoria, AvaliacaoCategoria
+)
 from django.db.models import Avg
 import json
 from django.contrib.auth import authenticate, login, logout
@@ -10,12 +15,11 @@ from django.contrib.admin.views.decorators import staff_member_required
 from .forms import CustomUserCreationForm, CustomUserChangeForm
 from django.contrib import messages
 from datetime import datetime
-from .models import CustomUser, Professor, Materia, DisciplinaPessoa
-from django.contrib import messages
-from datetime import datetime
-from .models import CustomUser, Materia, DisciplinaPessoa, Professor, Aluno
-from django.core.validators import validate_email # <-- NOVO: Para validar o formato do email
-from django.core.exceptions import ValidationError # <-- NOVO: Para capturar o erro do validate_email
+from django.core.validators import validate_email
+from django.core.exceptions import ValidationError
+from django.views.decorators.http import require_POST
+from django.utils import timezone
+
 
 @login_required(login_url='login')
 def home(request):
@@ -41,10 +45,6 @@ def login_view(request):
             return render(request, 'avaliacoes/login.html', {'error': error})
     else:
         return render(request, 'avaliacoes/login.html')
-
-@login_required(login_url='login')
-def home(request):
-    return render(request, 'avaliacoes/home.html')
 
 @login_required(login_url='login')
 def lista_professores(request):
@@ -105,24 +105,6 @@ def lista_comentarios(request):
     )
     return render(request, 'avaliacoes/lista_comentarios.html', {'comentarios': comentarios})
 
-@login_required(login_url='login')
-def detalhes_professor(request, professor_id):
-    professor = get_object_or_404(Professor, pk=professor_id)
-    avaliacoes = Avaliacao.objects.filter(
-        disciplina_pessoa__pessoa=professor.user
-    ).prefetch_related('categorias_avaliacao')
-    
-    # Média das notas nas categorias das avaliações do professor:
-    media_nota = avaliacoes.aggregate(
-        media=Avg('categorias_avaliacao__nota')
-    )['media'] or 0
-
-    return render(request, 'avaliacoes/detalhes_professor.html', {
-        'professor': professor,
-        'avaliacoes': avaliacoes,
-        'media_nota': media_nota,
-    })
-
 @staff_member_required
 def admin_cadastro(request):
     if request.method == 'POST':
@@ -180,10 +162,6 @@ def adicionar_professor(request):
         pass
     return render(request, 'avaliacoes/adicionar_professor.html')
 
-# ... (restante das views, como adicionar_disciplina, adicionar_professor, etc.)
-
-# SEU ARQUIVO: avaliacoes/views.py
-
 def adicionar_usuario(request):
     if request.method == 'POST':
         # --- 1. CAPTURA DOS DADOS ---
@@ -209,8 +187,6 @@ def adicionar_usuario(request):
             return redirect('adicionar_usuario')
 
         # 2b. Validação do CPF (Formato e Unicidade)
-        # (Se você precisar de uma validação de CPF *real*, precisará de uma biblioteca, 
-        # mas por enquanto vamos validar o formato e a unicidade)
         if not cpf or not cpf.isdigit() or len(cpf) != 11:
             messages.error(request, "CPF inválido. Deve conter exatamente 11 dígitos numéricos.")
             return redirect('adicionar_usuario')
@@ -228,7 +204,6 @@ def adicionar_usuario(request):
                 messages.error(request, "Data de Nascimento inválida. O formato deve ser DD/MM/AAAA.")
                 return redirect('adicionar_usuario')
         else:
-            # Se a data for obrigatória, adicione este 'else'
             messages.error(request, "Data de Nascimento é um campo obrigatório.")
             return redirect('adicionar_usuario')
 
@@ -269,56 +244,144 @@ def adicionar_usuario(request):
                 return redirect('adicionar_usuario') 
 
         elif tipo == 'aluno':
+            # (Implementar lógica de criação de Aluno aqui, similar ao Professor)
             messages.error(request, "Cadastro de Aluno ainda não implementado.")
             return redirect('adicionar_usuario') 
             
     # Se for um GET
     return render(request, 'avaliacoes/adicionar_usuario.html')
- 
+
+# ==================================================================
+# === NOVAS VIEWS CORRIGIDAS ABAIXO ================================
+# ==================================================================
+
+# Em avaliacoes/views.py
+
+@login_required(login_url='login')
 def detalhes_professor(request, professor_id):
+    # 1. Busca o professor
+    professor = get_object_or_404(Professor, pk=professor_id)
     
-    # 1. Busca o professor pelo ID (retorna 404 se não encontrar)
-    # Assumindo que o ID é o campo 'pk' do modelo Usuario
-    professor = get_object_or_404(CustomUser, pk=professor_id, user_type='professor')
+    # 2. Busca as "turmas" (DisciplinaPessoa) deste professor para o dropdown
+    # (Assume que 'pessoa' em DisciplinaPessoa é o professor)
+    disciplinas_do_professor = DisciplinaPessoa.objects.filter(pessoa=professor.user).select_related('disciplina')
+
+    # 3. Busca os comentários (que estão no modelo Avaliacao)
+    # --- ESTA É A LINHA CORRIGIDA ---
+    comentarios = Avaliacao.objects.filter(
+        disciplina_pessoa__pessoa=professor.user,
+        comentario__isnull=False
+    ).exclude(comentario='').order_by('-data_avaliacao') 
+
+    # 4. Busca dados para o gráfico BoxPlot
+    # USA O NOME CORRETO 'AvaliacaoCategoria'
+    notas_base = AvaliacaoCategoria.objects.filter(avaliacao__disciplina_pessoa__pessoa=professor.user)
     
-    # 2. Busca as avaliações/comentários relacionados ao professor (dados da parte inferior)
-    # comentarios = Avaliacao.objects.filter(professor=professor).order_by('-data')
-    
-    # 3. Cria dados fictícios para o gráfico e comentários (Se você ainda não tem os modelos)
-    
-    # Dados para o gráfico Box Plot (Aqui você faria a média das avaliações)
     dados_grafico = {
-        'didatica': [2, 4, 6, 8, 10],
-        'dificuldade': [1, 3, 5, 7, 9],
-        'relacionamento': [5, 6, 8, 9, 10],
-        'pontualidade': [4, 7, 8, 9, 10],
+        # CORRIGIDO: Filtra pela FK para Categoria usando 'categoria__nome_categoria'
+        'didatica': list(notas_base.filter(categoria__nome_categoria='Didática').values_list('nota', flat=True)),
+        'dificuldade': list(notas_base.filter(categoria__nome_categoria='Dificuldade').values_list('nota', flat=True)),
+        'relacionamento': list(notas_base.filter(categoria__nome_categoria='Relacionamento').values_list('nota', flat=True)),
+        'pontualidade': list(notas_base.filter(categoria__nome_categoria='Pontualidade').values_list('nota', flat=True)),
     }
-
-    comentarios_exemplo = [
-        {'data': '12/09/2020 - 10:05:34', 'texto': 'Quando explica é ótima, mas perde muito o foco da aula, muito desorganizada, grossa como já mencionei, provas não condizentes com a lista, porém sempre generosa nas correções e tenta fazer com que vc passe na matéria.'},
-        {'data': '20/06/2018 - 09:14:17', 'texto': 'expõe os alunos, é grossa desnecessariamente, porém, tem boa didática'},
-        {'data': '14/12/2017 - 17:51:53', 'texto': 'Provas muito difíceis, e não condizentes com as listas.'},
-    ]
-
+    
     context = {
         'professor': professor,
-        'dados_grafico': dados_grafico,
-        'comentarios': comentarios_exemplo, # Substitua por 'comentarios' do DB
-        # Dados Fictícios do Professor (Se o seu modelo Usuario não tiver todos esses campos)
-        'departamento': 'Ciência da Computação', 
-        'sala': '153A',
-        'telefone': '(11) 3091-8898',
-        'area': 'Álgebra Booleana'
+        'disciplinas_professor': disciplinas_do_professor, # Para o dropdown
+        'comentarios': comentarios,
+        'dados_grafico_json': json.dumps(dados_grafico, default=str), # Envia os dados como JSON
     }
 
     return render(request, 'avaliacoes/detalhes_professor.html', context)
 
-@login_required(login_url='login')
-def lista_professores(request):
-    # Esta linha busca os professores REAIS do banco de dados
-    professores = Professor.objects.annotate(
-        media_nota=Avg('user__disciplinas_pessoa__avaliacoes__categorias_avaliacao__nota')
-    ).filter(id__isnull=False)
 
-    # E aqui ela envia os professores REAIS para o template
-    return render(request, 'avaliacoes/lista_professores.html', {'professores': professores})
+@require_POST
+@login_required # Garante que o usuário está logado
+def salvar_avaliacao_api(request):
+    try:
+        data = json.loads(request.body)
+        
+        disciplina_pessoa_id = data.get('disciplina_pessoa_id')
+        if not disciplina_pessoa_id:
+            return JsonResponse({'success': False, 'error': 'Disciplina não selecionada'}, status=400)
+
+        disciplina_pessoa = DisciplinaPessoa.objects.get(pk=disciplina_pessoa_id)
+        
+        # 1. Cria a Avaliacao "pai"
+        # O modelo Avaliacao não tem 'aluno', é anônimo e ligado à turma
+        nova_avaliacao = Avaliacao.objects.create(
+            disciplina_pessoa=disciplina_pessoa
+        )
+
+        # 2. Busca as categorias para usar as FKs
+        # (Idealmente, isso poderia ser "cacheado" no início do app)
+        try:
+            categoria_didatica = Categoria.objects.get(nome_categoria='Didática')
+            categoria_dificuldade = Categoria.objects.get(nome_categoria='Dificuldade')
+            categoria_relacionamento = Categoria.objects.get(nome_categoria='Relacionamento')
+            categoria_pontualidade = Categoria.objects.get(nome_categoria='Pontualidade')
+        except Categoria.DoesNotExist as e:
+            return JsonResponse({'success': False, 'error': f'Categoria não encontrada no banco de dados: {e}'}, status=500)
+
+
+        # 3. Cria as AvaliacaoCategoria (as 4 notas)
+        # USA O NOME CORRETO 'AvaliacaoCategoria'
+        AvaliacaoCategoria.objects.create(
+            avaliacao=nova_avaliacao, 
+            categoria=categoria_didatica, 
+            nota=float(data.get('didatica'))
+        )
+        AvaliacaoCategoria.objects.create(
+            avaliacao=nova_avaliacao, 
+            categoria=categoria_dificuldade, 
+            nota=float(data.get('dificuldade'))
+        )
+        AvaliacaoCategoria.objects.create(
+            avaliacao=nova_avaliacao, 
+            categoria=categoria_relacionamento, 
+            nota=float(data.get('relacionamento'))
+        )
+        AvaliacaoCategoria.objects.create(
+            avaliacao=nova_avaliacao, 
+            categoria=categoria_pontualidade, 
+            nota=float(data.get('pontualidade'))
+        )
+        
+        return JsonResponse({'success': True})
+
+    except DisciplinaPessoa.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Disciplina inválida'}, status=404)
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=400)
+
+
+@require_POST
+@login_required # Garante que o usuário está logado
+def salvar_comentario_api(request):
+    try:
+        data = json.loads(request.body)
+        
+        disciplina_pessoa_id = data.get('disciplina_pessoa_id')
+        texto_comentario = data.get('texto')
+
+        if not disciplina_pessoa_id:
+            return JsonResponse({'success': False, 'error': 'Disciplina não selecionada'}, status=400)
+        if not texto_comentario:
+            return JsonResponse({'success': False, 'error': 'Comentário não pode estar vazio'}, status=400)
+
+        disciplina_pessoa = DisciplinaPessoa.objects.get(pk=disciplina_pessoa_id)
+
+        # Cria uma Avaliacao apenas com o comentário
+        comentario_obj = Avaliacao.objects.create(
+            disciplina_pessoa=disciplina_pessoa,
+            comentario=texto_comentario
+            # 'data_avaliacao' é preenchida por auto_now_add
+        )
+        
+        # Retorna sucesso e o timestamp
+        return JsonResponse({'success': True, 'timestamp': comentario_obj.data_avaliacao})
+
+    except DisciplinaPessoa.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Disciplina inválida'}, status=404)
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=400)
