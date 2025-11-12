@@ -152,16 +152,76 @@ def adicionar_aluno(request):
         pass
     return render(request, 'avaliacoes/adicionar_aluno.html')
 
+
 def adicionar_disciplina(request):
     if request.method == 'POST':
-        pass
+        # 1. Captura os dados (APENAS NOME E DATA)
+        nome = request.POST.get('nome')
+        data_inicio_str = request.POST.get('data_inicio')
+
+        # 2. Validação de campos preenchidos
+        if not nome or not data_inicio_str:
+            messages.error(request, "Os campos 'Nome' e 'Data de Início' são obrigatórios.")
+            return render(request, 'avaliacoes/adicionar_disciplina.html')
+
+        # 2a. NOVO: Valida se o NOME já existe (case-insensitive)
+        if Materia.objects.filter(nome__iexact=nome).exists():
+            messages.error(request, f"Já existe uma disciplina cadastrada com o nome '{nome}'.")
+            return render(request, 'avaliacoes/adicionar_disciplina.html')
+        
+        # 2b. Valida a data
+        data_inicio_obj = None
+        try:
+            data_inicio_obj = datetime.strptime(data_inicio_str, '%d/%m/%Y').date()
+        except ValueError:
+            messages.error(request, "Data de Início inválida. O formato deve ser DD/MM/AAAA.")
+            return render(request, 'avaliacoes/adicionar_disciplina.html')
+
+        # 3. NOVO: Lógica de Geração Automática do Código
+        try:
+            # Pega as iniciais das palavras (ex: "Cálculo Diferencial" -> "CD")
+            palavras = nome.split()
+            ignore = ['e', 'de', 'da', 'do', 'das', 'dos', 'para']
+            iniciais = ""
+            for p in palavras:
+                if p.lower() not in ignore and p.strip():
+                    iniciais += p[0].upper()
+            
+            # Se for muito curto (ex: "Redes"), usa as 3 primeiras letras
+            if len(iniciais) < 2 and len(nome) >= 3:
+                iniciais = nome[0:3].upper()
+            elif not iniciais:
+                iniciais = "DISC" # Caso de fallback
+            
+            # Busca quantos códigos já existem com essas iniciais (ex: 'CD')
+            count = Materia.objects.filter(codigo__startswith=iniciais).count()
+            
+            # Gera o código final (ex: 'CD001', 'CD002')
+            # :03d significa "formate com 3 dígitos, preenchendo com zeros"
+            novo_codigo = f"{iniciais}{count + 1:03d}"
+            
+            # Checagem final de segurança (raro, mas possível)
+            while Materia.objects.filter(codigo=novo_codigo).exists():
+                count += 1
+                novo_codigo = f"{iniciais}{count + 1:03d}"
+
+            # 4. Salva no banco com o código gerado
+            Materia.objects.create(
+                nome=nome,
+                codigo=novo_codigo, # <- Usa o código gerado
+                data_inicio=data_inicio_obj
+            )
+            
+            # NOVO: Mostra o código gerado na mensagem de sucesso
+            messages.success(request, f"Disciplina '{nome}' (Cód: {novo_codigo}) adicionada com sucesso!")
+            return redirect('adicionar_disciplina') 
+
+        except Exception as e:
+            messages.error(request, f"Erro inesperado ao gerar código ou salvar: {e}")
+            return render(request, 'avaliacoes/adicionar_disciplina.html')
+
+    # Se for um request GET, apenas renderiza a página
     return render(request, 'avaliacoes/adicionar_disciplina.html')
-
-def adicionar_professor(request):
-    if request.method == 'POST':
-        pass
-    return render(request, 'avaliacoes/adicionar_professor.html')
-
 # ... (restante das views, como adicionar_disciplina, adicionar_professor, etc.)
 
 # SEU ARQUIVO: avaliacoes/views.py
