@@ -71,7 +71,7 @@ class Avaliacao(models.Model):
 class AvaliacaoCategoria(models.Model):
     avaliacao = models.ForeignKey(Avaliacao, on_delete=models.CASCADE, related_name='categorias_avaliacao')
     categoria = models.ForeignKey(Categoria, on_delete=models.CASCADE)
-    nota = models.DecimalField(max_digits=3, decimal_places=2)
+    nota = models.DecimalField(max_digits=4, decimal_places=2)
 
     class Meta:
         unique_together = ('avaliacao', 'categoria')
