@@ -4,12 +4,12 @@
 {% block content %}
 
 <style>
-    /* CSS para o carrossel de ranking */
+    /* ... (Todo o seu CSS de .ranking-container, .ranking-carousel, etc. continua o mesmo) ... */
     .ranking-container {
         width: 100%;
         max-width: 1200px;
         margin: 40px auto;
-        padding: 0 40px; /* Espaço para as setas não ficarem coladas */
+        padding: 0 40px;
         box-sizing: border-box;
     }
 
@@ -23,32 +23,27 @@
     .ranking-carousel {
         display: flex;
         gap: 30px;
-        overflow-x: auto; /* <--- ISSO CRIA O SCROLL HORIZONTAL */
-        padding: 20px 10px; /* Espaço para a sombra do card */
-        
-        /* Melhora o scroll em touch-screens */
-        -webkit-overflow-scrolling: touch; 
-        
-        /* Esconde a barra de scroll (opcional, mas mais bonito) */
-        scrollbar-width: none; /* Firefox */
-        -ms-overflow-style: none;  /* IE e Edge */
+        overflow-x: auto;
+        padding: 20px 10px;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+        -ms-overflow-style: none;
     }
     .ranking-carousel::-webkit-scrollbar {
-        display: none; /* Chrome, Safari e Opera */
+        display: none;
     }
 
     .ranking-card {
-        flex: 0 0 280px; /* Não encolhe, não cresce, base de 280px */
+        flex: 0 0 280px;
         background-color: #fff;
         border-radius: 12px;
         box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
         padding: 25px;
         text-align: center;
         transition: transform 0.3s ease, box-shadow 0.3s ease;
-        position: relative; /* Para o número do ranking */
+        position: relative;
     }
     
-    /* Simula o card "central" da sua imagem */
     .ranking-card:hover,
     .ranking-card.active {
         transform: scale(1.05);
@@ -56,7 +51,6 @@
         border: 2px solid var(--verde);
     }
 
-    /* Número do Ranking (ex: #1) */
     .ranking-number {
         position: absolute;
         top: 15px;
@@ -67,7 +61,6 @@
         opacity: 0.5;
     }
     
-    /* Média de Notas (ex: 9.8) */
     .ranking-score {
         position: absolute;
         top: 15px;
@@ -90,8 +83,6 @@
         justify-content: center;
         font-size: 5rem;
         color: var(--azul-acinzentado);
-        
-        /* Borda verde (como na sua imagem) */
         border: 7px solid var(--verde);
         background-color: var(--painel-central);
     }
@@ -111,20 +102,29 @@
     }
     
     .ranking-card p {
-        font-size: 0.9rem;
+        font-size: 1.1rem; /* Aumentado */
         color: var(--verde-escuro-letras);
+        margin-top: 5px;
+        font-weight: 600; /* Destaque */
+    }
+    /* NOVO: Estilo para o nome do professor (menor) */
+    .ranking-card .professor-name {
+        font-size: 0.9rem;
+        color: var(--cinza-escuro-letras);
+        font-weight: 500;
         margin-top: 5px;
     }
 
 </style>
 
 <main class="ranking-container">
-    <h1>Melhores avaliados</h1>
+    <h1>Disciplinas Melhores Avaliadas</h1>
 
     <div class="ranking-carousel">
         
-        {% for professor in professores_ranking %}
-        <a href="{% url 'detalhes_professor' professor.id %}" style="text-decoration: none;">
+        {% for dp in ranking_disciplinas %}
+        
+        <a href="{% url 'detalhes_professor' dp.pessoa.professor.id %}" style="text-decoration: none;">
             <div class="ranking-card">
                 
                 <div class="ranking-number">
@@ -133,32 +133,25 @@
                 
                 <div class="ranking-score">
                     <i class="fa-solid fa-star" style="font-size: 0.9rem;"></i>
-                    {{ professor.media_nota|floatformat:1 }}
+                    {{ dp.media_nota|floatformat:1 }}
                 </div>
 
                 <div class="ranking-card-image">
-                    {% if professor.foto %}
-                        <img src="{{ professor.foto.url }}" alt="Foto de {{ professor.user.get_full_name }}">
+                    {% if dp.pessoa.professor.foto %}
+                        <img src="{{ dp.pessoa.professor.foto.url }}" alt="Foto de {{ dp.pessoa.get_full_name }}">
                     {% else %}
                         <i class="fa-solid fa-user"></i>
                     {% endif %}
                 </div>
 
-                <h3>{{ professor.user.get_full_name }}</h3>
+                <p>{{ dp.disciplina.nome }}</p>
                 
-                <p>
-                    {% for dp in professor.user.disciplinas_pessoa.all %}
-                        {{ dp.disciplina.nome }}
-                        {% if not forloop.last %}, {% endif %}
-                    {% empty %}
-                        Professor
-                    {% endfor %}
-                </p>
+                <h3 class="professor-name">{{ dp.pessoa.get_full_name }}</h3>
 
             </div>
         </a>
         {% empty %}
-            <p style="color: var(--verde-escuro-letras);">Nenhum professor foi avaliado ainda.</p>
+            <p style="color: var(--verde-escuro-letras);">Nenhuma disciplina foi avaliada ainda.</p>
         {% endfor %}
         </div>
 </main>

@@ -713,7 +713,20 @@
           </nav>
 
           <div class="sidebar-logout">
-            <a href="{% url 'logout' %}">Sair</a>
+            <form action="{% url 'logout' %}" method="post" style="display: inline;">
+              {% csrf_token %}
+              <button type="submit" style="
+            background: none; 
+            border: none; 
+            color: var(--cinza-escuro-letras); 
+            font-weight: 500; 
+            font-size: 1rem; 
+            cursor: pointer; 
+            padding: 0; 
+            font-family: inherit;">
+                Sair
+              </button>
+            </form>
           </div>
         </div>
 
@@ -775,5 +788,4 @@
   </script>
 
 </body>
-
 </html>

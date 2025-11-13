@@ -577,26 +577,33 @@ def salvar_comentario_api(request):
 # ============================================================
 # NOVA FUNÇÃO (ranking_geral) COMEÇA AQUI, FORA DA ANTERIOR
 # ============================================================
+# Em avaliacoes/views.py
+
 @login_required(login_url='login')
 def ranking_geral(request):
     
-    # 1. Anota a média de notas em cada professor
-    professores_avaliados = Professor.objects.annotate(
-        media_nota=Avg('user__disciplinas_pessoa__avaliacoes__categorias_avaliacao__nota')
+    # 1. A unidade de ranking agora é a 'DisciplinaPessoa' (a turma)
+    #    Anotamos a média de notas em cada 'DisciplinaPessoa'
+    ranking = DisciplinaPessoa.objects.annotate(
+        media_nota=Avg('avaliacoes__categorias_avaliacao__nota')
     )
     
     # 2. Lógica principal do Ranking:
     #    - Filtra para incluir apenas quem JÁ TEM avaliações (media_nota não é Nula)
-    #    - Ordena pela 'media_nota' em ordem descendente (o traço '-' significa 'do maior para o menor')
-    ranking = professores_avaliados.filter(
+    #    - Ordena pela 'media_nota' em ordem descendente
+    #    - select_related otimiza a busca, pegando dados do professor e disciplina
+    ranking_disciplinas = ranking.filter(
         media_nota__isnull=False
+    ).select_related(
+        'pessoa', 'pessoa__professor', 'disciplina'
     ).order_by('-media_nota')
     
-    # 3. (Opcional) Limita o ranking aos 10 melhores
-    ranking_top_10 = ranking[:10]
+    # 3. Limita o ranking (ex: Top 10)
+    ranking_top_10 = ranking_disciplinas[:10]
 
     context = {
-        'professores_ranking': ranking_top_10
+        # O nome da variável mudou para refletir o que estamos enviando
+        'ranking_disciplinas': ranking_top_10
     }
     
     return render(request, 'avaliacoes/ranking_geral.html', context)
