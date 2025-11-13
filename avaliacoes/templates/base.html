@@ -664,7 +664,16 @@
       <div class="nav-left">
         <a href="/" class="logo">EduAvalia</a>
         <nav class="menu">
-          <a href="{% url 'lista_professores' %}" class="btn-nav">Lista de Professores</a>
+          <a href="{% url 'home' %}"
+            class="{% if request.resolver_match.url_name == 'home' %}active{% endif %}">Início</a>
+
+          <a href="{% url 'ranking_geral' %}"
+            class="{% if request.resolver_match.url_name == 'ranking_geral' %}active{% endif %}">Ranking Geral</a>
+
+          <a href="/comparacao" class="{% if 'comparacao' in request.path %}active{% endif %}">Comparação</a>
+
+          <a href="#">Sobre Nós</a>
+          <a href="#">Contato</a>
         </nav>
       </div>
       <div class="nav-right">
@@ -674,45 +683,46 @@
         </div>
 
         <div class="user-dropdown" id="user-dropdown-menu">
-    <div class="sidebar-profile">
-        
-        <div class="profile-pic">
-            {% if request.user.user_type == 'professor' and request.user.professor.foto %}
-                <img src="{{ request.user.professor.foto.url }}" alt="Foto de Perfil" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
-            {% else %}
-                <i class="fa-solid fa-user"></i>
-            {% endif %}
-        </div>
-        
-        <strong>{{ request.user.get_full_name|default:request.user.username }}</strong>
-        <span>{{ request.user.get_user_type_display }}</span>
-    </div>
+          <div class="sidebar-profile">
 
-    <nav class="sidebar-menu">
-        {% if request.user.is_staff %}
+            <div class="profile-pic">
+              {% if request.user.user_type == 'professor' and request.user.professor.foto %}
+              <img src="{{ request.user.professor.foto.url }}" alt="Foto de Perfil"
+                style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
+              {% else %}
+              <i class="fa-solid fa-user"></i>
+              {% endif %}
+            </div>
+
+            <strong>{{ request.user.get_full_name|default:request.user.username }}</strong>
+            <span>{{ request.user.get_user_type_display }}</span>
+          </div>
+
+          <nav class="sidebar-menu">
+            {% if request.user.is_staff %}
             <a href="{% url 'adicionar_usuario' %}"
-                class="{% if request.resolver_match.url_name == 'adicionar_usuario' %}active{% endif %}">
-                Adicionar Usuário
+              class="{% if request.resolver_match.url_name == 'adicionar_usuario' %}active{% endif %}">
+              Adicionar Usuário
             </a>
 
             <a href="{% url 'adicionar_disciplina' %}"
-                class="{% if request.resolver_match.url_name == 'adicionar_disciplina' %}active{% endif %}">
-                Adicionar Disciplina
+              class="{% if request.resolver_match.url_name == 'adicionar_disciplina' %}active{% endif %}">
+              Adicionar Disciplina
             </a>
-        {% endif %}
-    </nav>
-
-    <div class="sidebar-logout">
-        <a href="{% url 'logout' %}">Sair</a>
-    </div>
-</div>
-          
+            {% endif %}
+          </nav>
 
           <div class="sidebar-logout">
-          
+            <a href="{% url 'logout' %}">Sair</a>
           </div>
         </div>
+
+
+        <div class="sidebar-logout">
+
+        </div>
       </div>
+    </div>
 
     </div>
   </header>
