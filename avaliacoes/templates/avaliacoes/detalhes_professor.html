@@ -12,7 +12,7 @@
     align-items: flex-start;
     width: 100%;
     max-width: 1200px;
-    margin: 0 auto; 
+    margin: 0 auto;
   }
 
   /* --- Card do Professor (Esquerda) --- */
@@ -22,6 +22,7 @@
     padding: 30px;
     box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
   }
+
   .professor-image-placeholder {
     width: 150px;
     height: 150px;
@@ -34,6 +35,7 @@
     font-size: 5rem;
     color: var(--azul-acinzentado);
   }
+
   .professor-card h2 {
     text-align: center;
     font-size: 1.6rem;
@@ -41,6 +43,7 @@
     margin-bottom: 5px;
     font-weight: 600;
   }
+
   .professor-card .subject {
     text-align: center;
     font-weight: 500;
@@ -48,6 +51,7 @@
     margin-bottom: 20px;
     font-size: 1rem;
   }
+
   .professor-card .info-list p {
     font-size: 0.9rem;
     line-height: 1.6;
@@ -55,18 +59,34 @@
     border-bottom: 1px solid var(--painel-central);
     padding: 8px 0;
   }
-  .professor-card .info-list p:last-child { border-bottom: none; }
-  .professor-card .info-list strong { color: #333; font-weight: 600; }
+
+  .professor-card .info-list p:last-child {
+    border-bottom: none;
+  }
+
+  .professor-card .info-list strong {
+    color: #333;
+    font-weight: 600;
+  }
 
   /* --- Conteúdo Principal (Direita) --- */
-  .evaluation-main { display: flex; flex-direction: column; gap: 30px; }
+  .evaluation-main {
+    display: flex;
+    flex-direction: column;
+    gap: 30px;
+  }
+
   .chart-card {
     padding: 30px;
     background-color: #fff;
     border-radius: 12px;
     box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
   }
-  .chart-container { height: 350px; position: relative; }
+
+  .chart-container {
+    height: 350px;
+    position: relative;
+  }
 
   /* Card do Formulário de Notas */
   .rating-form-card {
@@ -76,18 +96,20 @@
     border-radius: 12px;
     box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
   }
-  
+
   /* --- NOVO: Dropdown de Disciplina --- */
   .disciplina-select-group {
     margin-bottom: 20px;
     text-align: left;
   }
+
   .disciplina-select-group label {
     font-weight: 600;
     color: var(--azul-marinho);
     margin-bottom: 8px;
     display: block;
   }
+
   .disciplina-select-group select {
     width: 100%;
     padding: 12px;
@@ -97,6 +119,7 @@
     font-size: 1rem;
     font-family: 'Segoe UI', sans-serif;
   }
+
   /* --- FIM DO NOVO --- */
 
   .rating-form-card h3 {
@@ -105,6 +128,7 @@
     color: var(--azul-marinho);
     margin-bottom: 25px;
   }
+
   .rating-inputs {
     display: flex;
     justify-content: center;
@@ -112,6 +136,7 @@
     flex-wrap: wrap;
     margin-bottom: 25px;
   }
+
   .rating-group {
     display: flex;
     flex-direction: column;
@@ -119,14 +144,32 @@
     padding: 15px;
     border-radius: 8px;
     border: 1px solid var(--cinza-claro);
-    flex: 1; 
-    min-width: 120px; 
+    flex: 1;
+    min-width: 120px;
   }
-  .rating-group.rg-didatica { background-color: #d1eef4; }
-  .rating-group.rg-dificuldade { background-color: #d4edda; }
-  .rating-group.rg-relacionamento { background-color: #fff3cd; }
-  .rating-group.rg-pontualidade { background-color: #e2d9f3; }
-  .rating-group label { font-weight: 600; margin-bottom: 8px; color: #333; }
+
+  .rating-group.rg-didatica {
+    background-color: #d1eef4;
+  }
+
+  .rating-group.rg-dificuldade {
+    background-color: #d4edda;
+  }
+
+  .rating-group.rg-relacionamento {
+    background-color: #fff3cd;
+  }
+
+  .rating-group.rg-pontualidade {
+    background-color: #e2d9f3;
+  }
+
+  .rating-group label {
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: #333;
+  }
+
   .rating-group input {
     width: 80px;
     padding: 10px;
@@ -137,6 +180,7 @@
     font-weight: 500;
     box-sizing: border-box;
   }
+
   .btn-submit {
     padding: 12px 25px;
     font-size: 1rem;
@@ -148,23 +192,28 @@
     cursor: pointer;
     transition: all 0.3s ease;
   }
-  .btn-submit:hover { background-color: var(--azul-marinho); }
+
+  .btn-submit:hover {
+    background-color: var(--azul-marinho);
+  }
 
   /* --- Card de Comentários (Abaixo do Grid) --- */
   .comment-card {
-    grid-column: 1 / -1; 
+    grid-column: 1 / -1;
     margin-top: 0;
     padding: 30px;
     background-color: #fff;
     border-radius: 12px;
     box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
   }
+
   .comment-card h3 {
     font-size: 1.4rem;
     font-weight: 600;
     color: var(--azul-marinho);
     margin-bottom: 15px;
   }
+
   #comment-form textarea {
     width: 100%;
     height: 90px;
@@ -177,7 +226,12 @@
     resize: vertical;
     background-color: var(--painel-central);
   }
-  .comment-submit-area { text-align: right; margin-top: 10px; }
+
+  .comment-submit-area {
+    text-align: right;
+    margin-top: 10px;
+  }
+
   .comment-submit-area button {
     background-color: var(--azul-acinzentado);
     color: white;
@@ -188,80 +242,109 @@
     cursor: pointer;
     transition: background-color 0.3s;
   }
-  .comment-submit-area button:hover { background-color: var(--verde-escuro-letras); }
+
+  .comment-submit-area button:hover {
+    background-color: var(--verde-escuro-letras);
+  }
+
   .comments-list h3 {
     margin-top: 30px;
     border-bottom: 2px solid var(--painel-central);
     padding-bottom: 10px;
   }
+
   .comment {
     border-bottom: 1px solid var(--painel-central);
     padding: 15px 0;
   }
-  .comment:last-child { border-bottom: none; padding-bottom: 0; }
+
+  .comment:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+  }
+
   .comment .timestamp {
     font-size: 0.85rem;
     color: var(--cinza-escuro-letras);
     font-weight: 600;
     margin-bottom: 5px;
   }
-  .comment p { margin: 0; line-height: 1.6; color: var(--verde-escuro-letras); }
+
+  .comment p {
+    margin: 0;
+    line-height: 1.6;
+    color: var(--verde-escuro-letras);
+  }
 
   /* --- Responsividade --- */
   @media (max-width: 900px) {
-    .profile-grid-container { grid-template-columns: 1fr; }
-    .professor-card { position: static; max-width: 450px; margin: 0 auto; }
+    .profile-grid-container {
+      grid-template-columns: 1fr;
+    }
+
+    .professor-card {
+      position: static;
+      max-width: 450px;
+      margin: 0 auto;
+    }
   }
+
   @media (max-width: 500px) {
-    .rating-inputs { flex-direction: column; gap: 10px; }
-    .rating-group input { width: 100%; }
+    .rating-inputs {
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .rating-group input {
+      width: 100%;
+    }
   }
 </style>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@sgratzl/chartjs-chart-boxplot@4.3.0/build/index.umd.min.js"></script>
 
-<div class="admin-container" style="max-width: 1200px; padding-top: 20px;">
-  
+<div class="admin-container" style="max-width: 1200px; padding-top: 40px;">
+
   <div class="profile-grid-container">
 
     <aside class="professor-card">
-    
-    <div class="professor-image-placeholder">
+
+      <div class="professor-image-placeholder">
         {% if professor.foto %}
-            <img src="{{ professor.foto.url }}" alt="Foto de {{ professor.user.get_full_name }}" style="
+        <img src="{{ professor.foto.url }}" alt="Foto de {{ professor.user.get_full_name }}" style="
                 width: 100%; 
                 height: 100%; 
                 object-fit: cover; /* Garante que a imagem não distorça */
                 border-radius: 50%; /* Mantém a foto redonda */
             ">
         {% else %}
-            <i class="fa-solid fa-user"></i>
+        <i class="fa-solid fa-user"></i>
         {% endif %}
-    </div>
+      </div>
 
-    <h2>{{ professor.user.get_full_name }}</h2>
-    
-    <div class="subject">
+      <h2>{{ professor.user.get_full_name }}</h2>
+
+      <div class="subject">
         {% for dp in professor.user.disciplinas_pessoa.all %}
-            {{ dp.disciplina.nome }}
-            {% if not forloop.last %}, {% endif %}
+        {{ dp.disciplina.nome }}
+        {% if not forloop.last %}, {% endif %}
         {% empty %}
-            Nenhuma disciplina
+        Nenhuma disciplina
         {% endfor %}
-    </div>
-    
-    <div class="info-list">
+      </div>
+
+      <div class="info-list">
         <p><strong>Email:</strong> {{ professor.user.email }}</p>
         <p><strong>Departamento:</strong> (Adicionar no modelo)</p>
         <p><strong>Sala:</strong> (Adicionar no modelo)</p>
         <p><strong>Telefone:</strong> (Adicionar no modelo)</p>
         <p><strong>Área:</strong> (Adicionar no modelo)</p>
-    </div>
-</aside>
+      </div>
+    </aside>
 
     <section class="evaluation-main">
-      
+
       <div class="chart-card">
         <div class="chart-container">
           <canvas id="boxplot"></canvas>
@@ -270,57 +353,62 @@
 
       <form id="rating-form" class="rating-form-card">
         {% csrf_token %}
-        
+
         <div class="disciplina-select-group">
           <label for="disciplina-pessoa-select">Para qual disciplina é esta avaliação?</label>
           <select id="disciplina-pessoa-select" name="disciplina_pessoa_id" required>
             <option value="" disabled selected>Selecione uma disciplina...</option>
             {% for dp in professor.user.disciplinas_pessoa.all %}
-              <option value="{{ dp.pk }}">{{ dp.disciplina.nome }}</option>
+            <option value="{{ dp.pk }}">{{ dp.disciplina.nome }}</option>
             {% endfor %}
           </select>
         </div>
-        
+
         <h3>Média</h3>
         <div class="rating-inputs">
           <div class="rating-group rg-didatica">
             <label for="nota-didatica">Didática</label>
-            <input type="number" id="nota-didatica" name="didatica" min="0" max="10" step="0.5" placeholder="Nota" required>
+            <input type="number" id="nota-didatica" name="didatica" min="0" max="10" step="0.5" placeholder="Nota"
+              required>
           </div>
           <div class="rating-group rg-dificuldade">
             <label for="nota-dificuldade">Dificuldade</label>
-            <input type="number" id="nota-dificuldade" name="dificuldade" min="0" max="10" step="0.5" placeholder="Nota" required>
+            <input type="number" id="nota-dificuldade" name="dificuldade" min="0" max="10" step="0.5" placeholder="Nota"
+              required>
           </div>
           <div class="rating-group rg-relacionamento">
             <label for="nota-relacionamento">Relacionamento</label>
-            <input type="number" id="nota-relacionamento" name="relacionamento" min="0" max="10" step="0.5" placeholder="Nota" required>
+            <input type="number" id="nota-relacionamento" name="relacionamento" min="0" max="10" step="0.5"
+              placeholder="Nota" required>
           </div>
           <div class="rating-group rg-pontualidade">
             <label for="nota-pontualidade">Pontualidade</label>
-            <input type="number" id="nota-pontualidade" name="pontualidade" min="0" max="10" step="0.5" placeholder="Nota" required>
+            <input type="number" id="nota-pontualidade" name="pontualidade" min="0" max="10" step="0.5"
+              placeholder="Nota" required>
           </div>
         </div>
         <button type="submit" class="btn-submit">Submeter</button>
       </form>
     </section>
-  
+
     <section class="comment-card">
-      
+
       <form id="comment-form">
         {% csrf_token %}
-        
+
         <div class="disciplina-select-group">
           <label for="disciplina-comment-select">Para qual disciplina/turma é este comentário?</label>
           <select id="disciplina-comment-select" name="disciplina_pessoa_id" required>
             <option value="" disabled selected>Selecione uma disciplina...</option>
             {% for dp in professor.user.disciplinas_pessoa.all %}
-              <option value="{{ dp.pk }}">{{ dp.disciplina.nome }}</option>
+            <option value="{{ dp.pk }}">{{ dp.disciplina.nome }}</option>
             {% endfor %}
           </select>
         </div>
 
         <h3>Adicione um comentário:</h3>
-        <textarea id="comment-text" placeholder="Seja construtivo e respeitoso. Seu comentário é anônimo." required></textarea>
+        <textarea id="comment-text" placeholder="Seja construtivo e respeitoso. Seu comentário é anônimo."
+          required></textarea>
         <div class="comment-submit-area">
           <button type="submit">Publicar</button>
         </div>
@@ -329,14 +417,14 @@
       <div class="comments-list">
         <h3>Comentários</h3>
         {% for avaliacao in comentarios %}
-          <div class="comment">
-            <div class="timestamp">{{ avaliacao.data_criacao|date:"d/m/Y - H:i:s" }}</div>
-            <p>{{ avaliacao.comentario }}</p>
-          </div>
+        <div class="comment">
+          <div class="timestamp">{{ avaliacao.data_avaliacao|date:"d/m/Y - H:i:s" }}</div>
+          <p>{{ avaliacao.comentario }}</p>
+        </div>
         {% empty %}
-          <div class="comment">
-            <p>Nenhum comentário para este professor ainda.</p>
-          </div>
+        <div class="comment" id="no-comments-message">
+          <p>Nenhum comentário para este professor ainda.</p>
+        </div>
         {% endfor %}
       </div>
     </section>
@@ -351,7 +439,7 @@
   // {{ dados_grafico_json|safe }} é crucial para renderizar o JSON
   const graficoData = JSON.parse('{{ dados_grafico_json|safe }}');
 
-  document.addEventListener('DOMContentLoaded', function() {
+  document.addEventListener('DOMContentLoaded', function () {
 
     // --- 1. LÓGICA DO GRÁFICO (CHART.JS) ---
     // Agora usa os dados REAIS vindos do 'graficoData'
@@ -385,13 +473,13 @@
     const ctx = document.getElementById('boxplot');
     if (ctx) { new Chart(ctx.getContext('2d'), config); }
 
-    
+
     // --- 2. LÓGICA DO FORMULÁRIO DE AVALIAÇÃO (COM FETCH) ---
     const ratingForm = document.getElementById('rating-form');
     if (ratingForm) {
-      ratingForm.addEventListener('submit', function(event) {
+      ratingForm.addEventListener('submit', function (event) {
         event.preventDefault();
-        
+
         const formData = new FormData(ratingForm);
         const notas = {
           disciplina_pessoa_id: formData.get('disciplina_pessoa_id'), // <-- NOVO
@@ -416,25 +504,25 @@
           },
           body: JSON.stringify(notas)
         })
-        .then(response => response.json())
-        .then(data => {
-          if (data.success) {
-            alert('Avaliação salva com sucesso!');
-            ratingForm.reset();
-            // Idealmente, recarregar a página ou atualizar o gráfico
-            location.reload(); 
-          } else {
-            alert('Erro ao salvar avaliação: ' + data.error);
-          }
-        })
-        .catch(error => {
-          console.error('Erro no fetch:', error);
-          alert('Ocorreu um erro de rede. Tente novamente.');
-        });
+          .then(response => response.json())
+          .then(data => {
+            if (data.success) {
+              alert('Avaliação salva com sucesso!');
+              ratingForm.reset();
+              // Idealmente, recarregar a página ou atualizar o gráfico
+              location.reload();
+            } else {
+              alert('Erro ao salvar avaliação: ' + data.error);
+            }
+          })
+          .catch(error => {
+            console.error('Erro no fetch:', error);
+            alert('Ocorreu um erro de rede. Tente novamente.');
+          });
       });
     }
 
-    
+
     // --- 3. LÓGICA DO FORMULÁRIO DE COMENTÁRIO (COM FETCH) ---
     const commentForm = document.getElementById('comment-form');
     const commentList = document.querySelector('.comments-list');
@@ -442,9 +530,9 @@
     const commentDisciplinaSelect = document.getElementById('disciplina-comment-select');
 
     if (commentForm) {
-      commentForm.addEventListener('submit', function(event) {
+      commentForm.addEventListener('submit', function (event) {
         event.preventDefault();
-        
+
         const comentario = {
           disciplina_pessoa_id: commentDisciplinaSelect.value, // <-- NOVO
           texto: commentText.value
@@ -455,7 +543,7 @@
           return;
         }
         if (comentario.texto.trim() === '') {
-           alert('O comentário não pode estar vazio.');
+          alert('O comentário não pode estar vazio.');
           return;
         }
 
@@ -468,24 +556,30 @@
           },
           body: JSON.stringify(comentario)
         })
-        .then(response => response.json())
-        .then(data => {
-          if (data.success) {
-            addCommentToDOM(comentario.texto, data.timestamp);
-            commentForm.reset();
-          } else {
-            alert('Erro ao salvar comentário: ' + data.error);
-          }
-        })
-        .catch(error => {
-          console.error('Erro no fetch:', error);
-          alert('Ocorreu um erro de rede. Tente novamente.');
-        });
+          .then(response => response.json())
+          .then(data => {
+            if (data.success) {
+              addCommentToDOM(comentario.texto, data.timestamp);
+              commentForm.reset();
+            } else {
+              alert('Erro ao salvar comentário: ' + data.error);
+            }
+          })
+          .catch(error => {
+            console.error('Erro no fetch:', error);
+            alert('Ocorreu um erro de rede. Tente novamente.');
+          });
       });
     }
 
     // Função para adicionar o novo comentário à lista
+    // Função para adicionar o novo comentário à lista
     function addCommentToDOM(text, timestamp) {
+      // --- NOVO: Encontra e esconde a mensagem de "Nenhum comentário" ---
+      const noCommentsMsg = document.getElementById('no-comments-message');
+      if (noCommentsMsg) { noCommentsMsg.style.display = 'none'; }
+      // --- FIM DO NOVO ---
+
       const ts = new Date(timestamp).toLocaleString('pt-BR');
       const newComment = document.createElement('div');
       newComment.className = 'comment';
