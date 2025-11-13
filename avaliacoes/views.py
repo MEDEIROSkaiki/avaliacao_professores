@@ -407,44 +407,83 @@ def adicionar_usuario(request):
     }
     return render(request, 'avaliacoes/adicionar_usuario.html', context)
             
-    
-    
+
 def detalhes_professor(request, professor_id):
     # 1. Busca o professor
     professor = get_object_or_404(Professor, pk=professor_id)
     
-    # 2. Busca as "turmas" (DisciplinaPessoa) deste professor para o dropdown
-    # (Assume que 'pessoa' em DisciplinaPessoa é o professor)
+    # 2. Busca as "turmas" (DisciplinaPessoa) deste professor
     disciplinas_do_professor = DisciplinaPessoa.objects.filter(pessoa=professor.user).select_related('disciplina')
 
-    # 3. Busca os comentários (que estão no modelo Avaliacao)
-    # --- ESTA É A LINHA CORRIGIDA ---
+    # 3. Busca os comentários
     comentarios = Avaliacao.objects.filter(
         disciplina_pessoa__pessoa=professor.user,
         comentario__isnull=False
     ).exclude(comentario='').order_by('-data_avaliacao') 
 
-    # 4. Busca dados para o gráfico BoxPlot
-    # USA O NOME CORRETO 'AvaliacaoCategoria'
-    notas_base = AvaliacaoCategoria.objects.filter(avaliacao__disciplina_pessoa__pessoa=professor.user)
+    # 4. === NOVO: Lógica do Gráfico por Disciplina ===
     
-    dados_grafico = {
-        # CORRIGIDO: Filtra pela FK para Categoria usando 'categoria__nome_categoria'
-        'didatica': list(notas_base.filter(categoria__nome_categoria='Didática').values_list('nota', flat=True)),
-        'dificuldade': list(notas_base.filter(categoria__nome_categoria='Dificuldade').values_list('nota', flat=True)),
-        'relacionamento': list(notas_base.filter(categoria__nome_categoria='Relacionamento').values_list('nota', flat=True)),
-        'pontualidade': list(notas_base.filter(categoria__nome_categoria='Pontualidade').values_list('nota', flat=True)),
+    # Dicionário principal que será enviado como JSON
+    dados_grafico = {}
+    
+    # Listas para guardar a média GERAL (de todas as disciplinas)
+    dados_all = {
+        'didatica': [], 'dificuldade': [], 'relacionamento': [], 'pontualidade': []
     }
+
+    # Busca as 4 categorias de uma vez para evitar buscas repetidas no loop
+    try:
+        cat_didatica = Categoria.objects.get(nome_categoria='Didática')
+        cat_dificuldade = Categoria.objects.get(nome_categoria='Dificuldade')
+        cat_relacionamento = Categoria.objects.get(nome_categoria='Relacionamento')
+        cat_pontualidade = Categoria.objects.get(nome_categoria='Pontualidade')
+    except Categoria.DoesNotExist as e:
+        # Se as categorias não existirem, envia dados vazios
+        context = {
+            'professor': professor,
+            'disciplinas_professor': disciplinas_do_professor,
+            'comentarios': comentarios,
+            'dados_grafico_json': json.dumps({'all': dados_all}), # Envia ao menos o 'all' vazio
+        }
+        return render(request, 'avaliacoes/detalhes_professor.html', context)
+
+
+    # Loop por cada disciplina que o professor ministra
+    for dp in disciplinas_do_professor:
+        # Pega as notas APENAS dessa disciplina (dp)
+        notas_disciplina = AvaliacaoCategoria.objects.filter(avaliacao__disciplina_pessoa=dp)
+        
+        # Filtra as notas por categoria
+        notas_didatica = list(notas_disciplina.filter(categoria=cat_didatica).values_list('nota', flat=True))
+        notas_dificuldade = list(notas_disciplina.filter(categoria=cat_dificuldade).values_list('nota', flat=True))
+        notas_relacionamento = list(notas_disciplina.filter(categoria=cat_relacionamento).values_list('nota', flat=True))
+        notas_pontualidade = list(notas_disciplina.filter(categoria=cat_pontualidade).values_list('nota', flat=True))
+        
+        # Adiciona os dados dessa disciplina ao dicionário principal, usando o ID como chave
+        dados_grafico[dp.pk] = {
+            'didatica': notas_didatica,
+            'dificuldade': notas_dificuldade,
+            'relacionamento': notas_relacionamento,
+            'pontualidade': notas_pontualidade,
+        }
+        
+        # Adiciona essas notas também à média GERAL (all)
+        dados_all['didatica'].extend(notas_didatica)
+        dados_all['dificuldade'].extend(notas_dificuldade)
+        dados_all['relacionamento'].extend(notas_relacionamento)
+        dados_all['pontualidade'].extend(notas_pontualidade)
+
+    # Adiciona a média GERAL ao dicionário com a chave 'all'
+    dados_grafico['all'] = dados_all
     
     context = {
         'professor': professor,
         'disciplinas_professor': disciplinas_do_professor, # Para o dropdown
         'comentarios': comentarios,
-        'dados_grafico_json': json.dumps(dados_grafico, default=str), # Envia os dados como JSON
+        'dados_grafico_json': json.dumps(dados_grafico, default=str), # Envia o NOVO JSON
     }
 
     return render(request, 'avaliacoes/detalhes_professor.html', context)
-
 
 @require_POST
 @login_required # Garante que o usuário está logado
