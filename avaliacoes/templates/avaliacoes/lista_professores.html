@@ -6,12 +6,14 @@
     <section class="admin-panel">
         <h1>Lista de Professores Cadastrados</h1>
 
+        {% if request.user.is_staff %}
         <div style="margin-bottom: 25px; display: flex; justify-content: flex-end;">
             <a href="{% url 'adicionar_usuario' %}" class="btn">
                 + Novo Usuário
             </a>
         </div>
-
+        {% endif %}
+        
         <div class="professor-list-container">
             <div class="list-header" style="
                 display: grid; 
