@@ -27,7 +27,7 @@ urlpatterns = [
     path('professores/', views.lista_professores, name='lista_professores'),
 
     path('professores/<int:professor_id>/', views.detalhes_professor, name='detalhes_professor'),
-
+    path('ranking/', views.ranking_geral, name='ranking_geral'),
 ]
 
 if settings.DEBUG:

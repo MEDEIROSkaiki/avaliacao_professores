@@ -7,7 +7,7 @@ from .models import (
     Avaliacao, Professor, CustomUser, Materia, DisciplinaPessoa, 
     Aluno, Categoria, AvaliacaoCategoria
 )
-from django.db.models import Avg
+from django.db.models import Avg, Count, Q
 import json
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
@@ -21,10 +21,29 @@ from django.views.decorators.http import require_POST
 from django.utils import timezone
 
 
-@login_required(login_url='login')
-def home(request):
-    return render(request, 'avaliacoes/home.html')
 
+@login_required(login_url='login')
+
+
+def home(request):
+    # 1. Calcular a média geral da faculdade (de 0 a 10)
+    media_geral_dict = AvaliacaoCategoria.objects.aggregate(media=Avg('nota'))
+    media_geral = media_geral_dict.get('media') or 0.0
+
+    # 2. Calcular o total de avaliações
+    total_avaliacoes = Avaliacao.objects.count()
+    
+    # 3. NOVO: Calcular a porcentagem para o gráfico
+    # (media_geral / 10) * 100 = media_geral * 10
+    media_percent = (media_geral / 10) * 100 if media_geral > 0 else 0
+
+    context = {
+        'media_geral_faculdade': media_geral,
+        'media_percent_faculdade': media_percent, # <-- Variável para o gráfico
+        'total_avaliacoes': total_avaliacoes,
+        # (Não precisamos mais do 'nome_aluno', usamos request.user.first_name no template)
+    }
+    return render(request, 'avaliacoes/home.html', context)
 def index(request):
     if request.user.is_authenticated:
         return redirect('home')
@@ -48,11 +67,35 @@ def login_view(request):
 
 @login_required(login_url='login')
 def lista_professores(request):
+    # Inicia a query base de professores
     professores = Professor.objects.annotate(
         media_nota=Avg('user__disciplinas_pessoa__avaliacoes__categorias_avaliacao__nota')
-    ).filter(id__isnull=False)
+    ).filter(id__isnull=False).order_by('user__first_name') # Adicionei ordenação
 
-    return render(request, 'avaliacoes/lista_professores.html', {'professores': professores})
+    # --- LÓGICA DE PESQUISA ---
+    # Pega os termos de pesquisa da URL (vindos do GET da home)
+    query_professor = request.GET.get('q_professor')
+    query_disciplina = request.GET.get('q_disciplina')
+
+    if query_professor:
+        # Filtra por nome OU sobrenome
+        professores = professores.filter(
+            Q(user__first_name__icontains=query_professor) | 
+            Q(user__last_name__icontains=query_professor)
+        )
+
+    if query_disciplina:
+        # Filtra pelo nome da disciplina que o professor leciona
+        professores = professores.filter(
+            user__disciplinas_pessoa__disciplina__nome__icontains=query_disciplina
+        ).distinct() # .distinct() evita professores duplicados se ele der 2x a mesma matéria
+
+    context = {
+        'professores': professores,
+        'query_professor': query_professor, # Bônus: envia o termo de volta
+        'query_disciplina': query_disciplina # Bônus: envia o termo de volta
+    }
+    return render(request, 'avaliacoes/lista_professores.html', context)
 
 @login_required(login_url='login')
 def enviar_avaliacao(request):
@@ -300,6 +343,7 @@ def adicionar_usuario(request):
                 messages.error(request, "Disciplina selecionada inválida.")
                 return redirect('adicionar_usuario')
 
+
         # --- 3. PROCESSAMENTO E SALVAMENTO ---
         nome_completo_lista = nome.split(' ')
         first_name = nome_completo_lista[0] if nome_completo_lista else ''
@@ -415,13 +459,11 @@ def salvar_avaliacao_api(request):
         disciplina_pessoa = DisciplinaPessoa.objects.get(pk=disciplina_pessoa_id)
         
         # 1. Cria a Avaliacao "pai"
-        # O modelo Avaliacao não tem 'aluno', é anônimo e ligado à turma
         nova_avaliacao = Avaliacao.objects.create(
             disciplina_pessoa=disciplina_pessoa
         )
 
         # 2. Busca as categorias para usar as FKs
-        # (Idealmente, isso poderia ser "cacheado" no início do app)
         try:
             categoria_didatica = Categoria.objects.get(nome_categoria='Didática')
             categoria_dificuldade = Categoria.objects.get(nome_categoria='Dificuldade')
@@ -430,9 +472,7 @@ def salvar_avaliacao_api(request):
         except Categoria.DoesNotExist as e:
             return JsonResponse({'success': False, 'error': f'Categoria não encontrada no banco de dados: {e}'}, status=500)
 
-
         # 3. Cria as AvaliacaoCategoria (as 4 notas)
-        # USA O NOME CORRETO 'AvaliacaoCategoria'
         AvaliacaoCategoria.objects.create(
             avaliacao=nova_avaliacao, 
             categoria=categoria_didatica, 
@@ -465,9 +505,10 @@ def salvar_avaliacao_api(request):
 @require_POST
 @login_required # Garante que o usuário está logado
 def salvar_comentario_api(request):
+    # --- INÍCIO DA CORREÇÃO DE INDENTAÇÃO ---
     try:
         data = json.loads(request.body)
-        
+
         disciplina_pessoa_id = data.get('disciplina_pessoa_id')
         texto_comentario = data.get('texto')
 
@@ -480,15 +521,43 @@ def salvar_comentario_api(request):
 
         # Cria uma Avaliacao apenas com o comentário
         comentario_obj = Avaliacao.objects.create(
-            disciplina_pessoa=disciplina_pessoa,
-            comentario=texto_comentario
-            # 'data_avaliacao' é preenchida por auto_now_add
+            disciplina_pessoa=disciplina_pessoa, comentario=texto_comentario
         )
         
-        # Retorna sucesso e o timestamp
+        # CORREÇÃO: 'return' estava escrito errado e mal indentado
         return JsonResponse({'success': True, 'timestamp': comentario_obj.data_avaliacao})
 
     except DisciplinaPessoa.DoesNotExist:
         return JsonResponse({'success': False, 'error': 'Disciplina inválida'}, status=404)
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)}, status=400)
+# A FUNÇÃO 'salvar_comentario_api' TERMINA AQUI.
+# --- FIM DA CORREÇÃO DE INDENTAÇÃO ---
+
+
+# ============================================================
+# NOVA FUNÇÃO (ranking_geral) COMEÇA AQUI, FORA DA ANTERIOR
+# ============================================================
+@login_required(login_url='login')
+def ranking_geral(request):
+    
+    # 1. Anota a média de notas em cada professor
+    professores_avaliados = Professor.objects.annotate(
+        media_nota=Avg('user__disciplinas_pessoa__avaliacoes__categorias_avaliacao__nota')
+    )
+    
+    # 2. Lógica principal do Ranking:
+    #    - Filtra para incluir apenas quem JÁ TEM avaliações (media_nota não é Nula)
+    #    - Ordena pela 'media_nota' em ordem descendente (o traço '-' significa 'do maior para o menor')
+    ranking = professores_avaliados.filter(
+        media_nota__isnull=False
+    ).order_by('-media_nota')
+    
+    # 3. (Opcional) Limita o ranking aos 10 melhores
+    ranking_top_10 = ranking[:10]
+
+    context = {
+        'professores_ranking': ranking_top_10
+    }
+    
+    return render(request, 'avaliacoes/ranking_geral.html', context)
