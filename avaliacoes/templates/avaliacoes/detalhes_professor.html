@@ -219,7 +219,7 @@
 </style>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/chartjs-chart-box-and-violin-plot@4.2.0/build/Chart.BoxPlot.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@sgratzl/chartjs-chart-boxplot@4.3.0/build/index.umd.min.js"></script>
 
 <div class="admin-container" style="max-width: 1200px; padding-top: 20px;">
   
@@ -272,11 +272,11 @@
         {% csrf_token %}
         
         <div class="disciplina-select-group">
-          <label for="disciplina-pessoa-select">Para qual disciplina/turma é esta avaliação?</label>
+          <label for="disciplina-pessoa-select">Para qual disciplina é esta avaliação?</label>
           <select id="disciplina-pessoa-select" name="disciplina_pessoa_id" required>
             <option value="" disabled selected>Selecione uma disciplina...</option>
-            {% for dp in disciplinas_professor %}
-              <option value="{{ dp.pk }}">{{ dp.materia.nome }} ({{dp.ano}}/{{dp.semestre}})</option>
+            {% for dp in professor.user.disciplinas_pessoa.all %}
+              <option value="{{ dp.pk }}">{{ dp.disciplina.nome }}</option>
             {% endfor %}
           </select>
         </div>
@@ -313,8 +313,8 @@
           <label for="disciplina-comment-select">Para qual disciplina/turma é este comentário?</label>
           <select id="disciplina-comment-select" name="disciplina_pessoa_id" required>
             <option value="" disabled selected>Selecione uma disciplina...</option>
-            {% for dp in disciplinas_professor %}
-              <option value="{{ dp.pk }}">{{ dp.materia.nome }} ({{dp.ano}}/{{dp.semestre}})</option>
+            {% for dp in professor.user.disciplinas_pessoa.all %}
+              <option value="{{ dp.pk }}">{{ dp.disciplina.nome }}</option>
             {% endfor %}
           </select>
         </div>
