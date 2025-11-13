@@ -42,14 +42,34 @@
             ">
                 
                 <div style="display: flex; align-items: center;">
-                    <i class="fas fa-user-circle" style="font-size: 30px; color: var(--azul-marinho); margin-right: 15px;"></i> 
+                    {% if professor.foto %}
+                        <img src="{{ professor.foto.url }}" alt="Foto de {{ professor.user.first_name }}" style="
+                            width: 30px; 
+                            height: 30px; 
+                            border-radius: 50%; /* Deixa a foto redonda */
+                            object-fit: cover; /* Garante que a imagem não distorça */
+                            margin-right: 15px;
+                        ">
+                    {% else %}
+                        <i class="fas fa-user-circle" style="
+                            font-size: 30px; 
+                            color: var(--azul-marinho); 
+                            margin-right: 15px;
+                        "></i> 
+                    {% endif %}
                     
                     <span>{{ professor.user.first_name }} {{ professor.user.last_name }}</span>
                 </div>
                 
                 <span>{{ professor.user.email }}</span>
 
-                <span>{{ professor.disciplinas }}</span>
+                <span>
+                    {% for dp in professor.user.disciplinas_pessoa.all %}
+                        {{ dp.disciplina.nome }}
+                        {% if not forloop.last %}, {% endif %} {% empty %}
+                        <span style="opacity: 0.7;">Nenhuma disciplina</span>
+                    {% endfor %}
+                </span>
 
                 <div>
                     <a href="{% url 'detalhes_professor' professor.id %}" class="btn" style="

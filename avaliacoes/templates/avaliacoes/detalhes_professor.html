@@ -226,18 +226,39 @@
   <div class="profile-grid-container">
 
     <aside class="professor-card">
-      <div class="professor-image-placeholder">
-        <i class="fa-solid fa-user"></i>
-      </div>
-      <h2>{{ professor.user.get_full_name }}</h2>
-      <div class="info-list">
+    
+    <div class="professor-image-placeholder">
+        {% if professor.foto %}
+            <img src="{{ professor.foto.url }}" alt="Foto de {{ professor.user.get_full_name }}" style="
+                width: 100%; 
+                height: 100%; 
+                object-fit: cover; /* Garante que a imagem não distorça */
+                border-radius: 50%; /* Mantém a foto redonda */
+            ">
+        {% else %}
+            <i class="fa-solid fa-user"></i>
+        {% endif %}
+    </div>
+
+    <h2>{{ professor.user.get_full_name }}</h2>
+    
+    <div class="subject">
+        {% for dp in professor.user.disciplinas_pessoa.all %}
+            {{ dp.disciplina.nome }}
+            {% if not forloop.last %}, {% endif %}
+        {% empty %}
+            Nenhuma disciplina
+        {% endfor %}
+    </div>
+    
+    <div class="info-list">
         <p><strong>Email:</strong> {{ professor.user.email }}</p>
         <p><strong>Departamento:</strong> (Adicionar no modelo)</p>
         <p><strong>Sala:</strong> (Adicionar no modelo)</p>
         <p><strong>Telefone:</strong> (Adicionar no modelo)</p>
         <p><strong>Área:</strong> (Adicionar no modelo)</p>
-      </div>
-    </aside>
+    </div>
+</aside>
 
     <section class="evaluation-main">
       
