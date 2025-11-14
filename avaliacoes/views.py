@@ -585,13 +585,19 @@ def salvar_comentario_api(request):
 @login_required(login_url='login')
 def ranking_geral(request):
     
-    # 1. A unidade de ranking agora é a 'DisciplinaPessoa' (a turma)
+    # 1. Decide o limite (Top 10 para admin, Top 5 para outros)
+    if request.user.is_staff:
+        limite = 10
+    else:
+        limite = 5
+
+    # 2. A unidade de ranking agora é a 'DisciplinaPessoa' (a turma)
     #    Anotamos a média de notas em cada 'DisciplinaPessoa'
     ranking = DisciplinaPessoa.objects.annotate(
         media_nota=Avg('avaliacoes__categorias_avaliacao__nota')
     )
     
-    # 2. Lógica principal do Ranking:
+    # 3. Lógica principal do Ranking:
     #    - Filtra para incluir apenas quem JÁ TEM avaliações (media_nota não é Nula)
     #    - Ordena pela 'media_nota' em ordem descendente
     #    - select_related otimiza a busca, pegando dados do professor e disciplina
@@ -601,12 +607,13 @@ def ranking_geral(request):
         'pessoa', 'pessoa__professor', 'disciplina'
     ).order_by('-media_nota')
     
-    # 3. Limita o ranking (ex: Top 10)
-    ranking_top_10 = ranking_disciplinas[:10]
+    # 4. Limita o ranking (com o limite que definimos)
+    ranking_top = ranking_disciplinas[:limite]
 
     context = {
         # O nome da variável mudou para refletir o que estamos enviando
-        'ranking_disciplinas': ranking_top_10
+        'ranking_disciplinas': ranking_top
+        # O template vai usar 'request.user.is_staff' para decidir como exibir
     }
     
     return render(request, 'avaliacoes/ranking_geral.html', context)
