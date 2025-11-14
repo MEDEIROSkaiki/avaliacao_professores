@@ -1,3 +1,4 @@
+# avaliacoes/urls.py
 from django.urls import path
 from . import views
 from django.contrib.auth.views import LogoutView
@@ -20,6 +21,9 @@ urlpatterns = [
     path('api/salvar-avaliacao/', views.salvar_avaliacao_api, name='salvar_avaliacao_api'),
     path('api/salvar-comentario/', views.salvar_comentario_api, name='salvar_comentario_api'),
 
+    path('api/sugestoes-professores/', views.sugestoes_professores_api, name='sugestoes_professores_api'),
+    path('api/sugestoes-disciplinas/', views.sugestoes_disciplinas_api, name='sugestoes_disciplinas_api'),
+
     path('avaliar/', views.enviar_avaliacao, name='enviar_avaliacao'),
     path('obrigado/', views.obrigado, name='obrigado'),
 
@@ -29,10 +33,17 @@ urlpatterns = [
 
     path('disciplina/adicionar/', views.adicionar_disciplina, name='adicionar_disciplina'),
     path('usuario/adicionar/', views.adicionar_usuario, name='adicionar_usuario'),
-    path('professores/', views.lista_professores, name='lista_professores'),
+    path('professores/', views.lista_professores, name='lista_professores'), # <-- Você tem essa rota duplicada
 
-    path('professores/<int:professor_id>/', views.detalhes_professor, name='detalhes_professor'),
+    path('professores/<int:professor_id>/', views.detalhes_professor, name='detalhes_professor'), # <-- E essa também
     path('ranking/', views.ranking_geral, name='ranking_geral'),
+    
+    # === NOVA ROTA ADICIONADA ===
+    path('comparacao/', views.comparacao_disciplina, name='comparacao_disciplina'),
+    # ============================
+    
+    path('sobre-nos/', views.sobre_nos, name='sobre_nos'),
+    
 ]
 
 if settings.DEBUG:

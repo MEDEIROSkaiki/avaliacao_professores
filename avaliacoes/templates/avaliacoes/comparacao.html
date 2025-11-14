@@ -1,0 +1,251 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<style>
+  /* CSS específico para a página de Comparação */
+  .comparacao-wrapper {
+    /* Usa o mesmo layout do admin, mas sem o painel lateral */
+    width: 90%;
+    max-width: 1200px;
+    margin: 40px auto;
+    flex-grow: 1;
+  }
+
+  .comparacao-header {
+    text-align: center;
+    margin-bottom: 40px;
+  }
+
+  .comparacao-header h1 {
+    color: var(--azul-marinho);
+    font-size: 2rem;
+    font-weight: 700;
+    margin-bottom: 30px;
+  }
+
+  /* Estilo do formulário de busca */
+  .comparacao-search {
+    position: relative;
+    max-width: 700px;
+    margin: 0 auto;
+  }
+
+  .comparacao-search i {
+    position: absolute;
+    left: 20px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--verde-escuro-letras);
+    font-size: 1.1rem;
+  }
+
+  .comparacao-search input[type="text"] {
+    width: 100%;
+    padding: 18px 20px 18px 55px; /* Espaço para o ícone */
+    border: none;
+    border-radius: 10px;
+    background-color: #fff;
+    font-size: 1.1rem;
+    color: var(--azul-marinho);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.07);
+  }
+
+  .comparacao-header h2 {
+    margin-top: 30px;
+    font-size: 1.2rem;
+    color: var(--verde-escuro-letras);
+    font-weight: 500;
+  }
+
+  .comparacao-header h2 strong {
+    color: var(--azul-marinho);
+  }
+
+  /* Grid de Resultados */
+  .comparacao-resultados {
+    display: grid;
+    /* Cria 3 colunas, mas se ajusta para menos */
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 30px;
+  }
+
+  /* Mensagem de "Vazio" */
+  .comparacao-empty {
+    grid-column: 1 / -1; /* Ocupa todas as colunas */
+    text-align: center;
+    padding: 50px 20px;
+    background-color: #fff;
+    border-radius: 12px;
+    color: var(--verde-escuro-letras);
+    font-size: 1.1rem;
+    font-weight: 500;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+  }
+
+  /* Card individual do professor */
+  .comparacao-card {
+    background-color: #fff;
+    border-radius: 12px;
+    padding: 30px;
+    text-align: center;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.07);
+    border: 1px solid var(--painel-central);
+    display: flex;
+    flex-direction: column;
+  }
+
+  .card-foto {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    margin: 0 auto 20px auto;
+    background-color: var(--painel-central);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--azul-acinzentado);
+    font-size: 4rem;
+    /* Borda verde igual ao mockup */
+    border: 5px solid var(--verde); 
+  }
+
+  .card-foto img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 50%;
+  }
+
+  .card-nome {
+    font-size: 1.3rem;
+    color: var(--azul-marinho);
+    font-weight: 600;
+    margin-bottom: 5px;
+  }
+
+  .card-disciplina {
+    font-size: 0.95rem;
+    color: var(--verde-escuro-letras);
+    margin-bottom: 25px;
+    display: block;
+  }
+
+  /* Lista de Médias */
+  .card-metricas {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    text-align: left;
+    margin-bottom: 30px;
+  }
+
+  .card-metricas li {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--painel-central);
+    font-size: 1rem;
+  }
+  .card-metricas li:last-child {
+    border-bottom: none;
+  }
+
+  .card-metricas span {
+    color: var(--verde-escuro-letras);
+    font-weight: 500;
+  }
+
+  .card-metricas strong {
+    color: var(--azul-marinho);
+    font-size: 1.2rem;
+    font-weight: 700;
+  }
+
+  /* Botão (reaproveita a classe .btn de base.html) */
+  .btn-ver-perfil {
+    margin-top: auto; /* Empurra o botão para o fim do card */
+    padding: 14px 25px;
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 1rem;
+    color: #fff;
+    background-color: var(--verde);
+    text-align: center;
+    width: 100%;
+  }
+  .btn-ver-perfil:hover {
+    opacity: 0.85;
+    transform: translateY(-2px);
+  }
+
+</style>
+
+<div class="comparacao-wrapper">
+  
+  <div class="comparacao-header">
+    <h1>Compare entre professores de uma disciplina</h1>
+    
+    <form method="GET" action="{% url 'comparacao_disciplina' %}" class="comparacao-search">
+      <i class="fa-solid fa-search"></i>
+      <input type="text" name="q_disciplina" placeholder="Pesquisar pelo nome da matéria..." value="{{ query_disciplina|default:'' }}">
+      </form>
+    
+    {% if materia_encontrada %}
+      <h2>Resultados para: <strong>{{ materia_encontrada.nome }}</strong></h2>
+    {% endif %}
+  </div>
+
+  <div class="comparacao-resultados">
+    
+    {% for dp in resultados %}
+      <div class="comparacao-card">
+        
+        <div class="card-foto">
+          {% if dp.pessoa.professor.foto %}
+            <img src="{{ dp.pessoa.professor.foto.url }}" alt="Foto de {{ dp.pessoa.get_full_name }}">
+          {% else %}
+            <i class="fa-solid fa-user"></i>
+          {% endif %}
+        </div>
+        
+        <h3 class="card-nome">{{ dp.pessoa.get_full_name|default:dp.pessoa.username }}</h3>
+        <span class="card-disciplina">{{ dp.disciplina.nome }}</span>
+        
+        <ul class="card-metricas">
+          <li>
+            <span>Didática</span>
+            <strong>{{ dp.media_didatica|floatformat:1|default:"0.0" }}</strong>
+          </li>
+          <li>
+            <span>Dificuldade</span>
+            <strong>{{ dp.media_dificuldade|floatformat:1|default:"0.0" }}</strong>
+          </li>
+          <li>
+            <span>Relacionamento</span>
+            <strong>{{ dp.media_relacionamento|floatformat:1|default:"0.0" }}</strong>
+          </li>
+          <li>
+            <span>Pontualidade</span>
+            <strong>{{ dp.media_pontualidade|floatformat:1|default:"0.0" }}</strong>
+          </li>
+        </ul>
+        
+        <a href="{% url 'detalhes_professor' dp.pessoa.professor.id %}" class="btn-ver-perfil">
+          Ver Perfil
+        </a>
+      </div>
+
+    {% empty %}
+      {% if query_disciplina %}
+        <p class="comparacao-empty">Nenhum professor encontrado ministrando '{{ query_disciplina }}'.</p>
+      {% else %}
+        <p class="comparacao-empty">Digite o nome de uma disciplina na barra de busca para começar.</p>
+      {% endif %}
+    {% endfor %}
+    
+  </div> </div> {% endblock content %}

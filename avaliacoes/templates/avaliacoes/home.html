@@ -7,8 +7,21 @@
         <h2>Olá, {{ request.user.first_name|default:request.user.username }}! <br> AVALIE OU PESQUISE</h2>
         
         <form action="{% url 'lista_professores' %}" method="get">
-            <input type="text" name="q_professor" placeholder="Pesquisar por nome do professor(a)...">
-            <input type="text" name="q_disciplina" placeholder="Pesquisar por disciplina...">
+            
+            <input type="text" name="q_professor" 
+                   id="search-professor" 
+                   list="professor-sugestoes" 
+                   placeholder="Pesquisar por nome do professor(a)..." 
+                   autocomplete="off">
+            <datalist id="professor-sugestoes"></datalist>
+
+            <input type="text" name="q_disciplina" 
+                   id="search-disciplina" 
+                   list="disciplina-sugestoes" 
+                   placeholder="Pesquisar por disciplina..." 
+                   autocomplete="off">
+            <datalist id="disciplina-sugestoes"></datalist>
+
             <button type="submit">Pesquisar</button>
         </form>
     </div>
@@ -23,10 +36,7 @@
                 width: 100px;
                 height: 100px;
                 border-radius: 50%;
-                
-                /* CORREÇÃO 3: Gráfico dinâmico. Usa a variável de porcentagem */
                 background: conic-gradient(var(--verde) {{ media_percent_faculdade|floatformat:0 }}%, var(--azul-marinho) 0); 
-                
                 display: flex;
                 align-items: center;
                 justify-content: center;">
@@ -41,7 +51,6 @@
                     box-sizing: border-box;">
                     
                     <strong style="font-size: 1.5rem; color: var(--verde);">{{ media_geral_faculdade|floatformat:2 }}</strong>
-                    
                     <span style="font-size: 0.7rem; color: var(--cinza-escuro-letras); display: block; margin-top: -5px;">Média</span>
                 </div>
             </div>
@@ -49,23 +58,75 @@
     </div>
 
     <div class="bottom-cards-row">
-
-        <a href="/ranking" class="mini-card" style="text-decoration: none;">
+        <a href="{% url 'ranking_geral' %}" class="mini-card" style="text-decoration: none;">
             <i class="fa-solid fa-trophy"></i>
             <span>Ranking Geral</span>
         </a>
-
         <a href="/comparacao" class="mini-card" style="text-decoration: none;">
             <i class="fa-solid fa-balance-scale"></i>
             <span>Comparação</span>
         </a>
-
         <div class="mini-card">
             <small>Avaliações Realizadas</small>
             <strong>{{ total_avaliacoes }}</strong>
         </div>
-
     </div>
 
 </main>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    
+    // --- FUNÇÕES AUXILIARES ---
+    
+    // Função para buscar sugestões na API
+    async function getSuggestions(url, term) {
+        // Evita chamadas de API desnecessárias
+        if (term.length < 2) {
+            return [];
+        }
+        try {
+            const response = await fetch(`${url}?term=${encodeURIComponent(term)}`);
+            if (!response.ok) return [];
+            const data = await response.json();
+            return data.sugestoes || [];
+        } catch (error) {
+            console.error('Erro ao buscar sugestões:', error);
+            return [];
+        }
+    }
+
+    // Função para atualizar o <datalist>
+    function updateDatalist(datalistElement, suggestions) {
+        datalistElement.innerHTML = ''; // Limpa sugestões antigas
+        suggestions.forEach(item => {
+            const option = document.createElement('option');
+            option.value = item;
+            datalistElement.appendChild(option);
+        });
+    }
+
+    // --- PROFESSOR AUTOCOMPLETE ---
+    const profInput = document.getElementById('search-professor');
+    const profDatalist = document.getElementById('professor-sugestoes');
+    
+    profInput.addEventListener('input', async function() {
+        const term = this.value;
+        const suggestions = await getSuggestions("{% url 'sugestoes_professores_api' %}", term);
+        updateDatalist(profDatalist, suggestions);
+    });
+
+    // --- DISCIPLINA AUTOCOMPLETE ---
+    const discInput = document.getElementById('search-disciplina');
+    const discDatalist = document.getElementById('disciplina-sugestoes');
+
+    discInput.addEventListener('input', async function() {
+        const term = this.value;
+        const suggestions = await getSuggestions("{% url 'sugestoes_disciplinas_api' %}", term);
+        updateDatalist(discDatalist, suggestions);
+    });
+
+});
+</script>
+
 {% endblock content %}

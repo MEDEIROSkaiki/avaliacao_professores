@@ -1,0 +1,187 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<style>
+  /* Estilos específicos para a página "Sobre Nós" */
+  .sobre-nos-container {
+    width: 90%;
+    max-width: 1100px; /* Um pouco mais largo que o .content padrão */
+    margin: 40px auto;
+    flex-grow: 1;
+  }
+
+  /* 1. Cabeçalho principal (Sobre o EduAvalia) */
+  .sobre-nos-header {
+    padding: 40px;
+    border-radius: 12px;
+    /* Usando a cor de fundo do painel central do seu base.html */
+    background-color: var(--painel-central); 
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+    margin-bottom: 40px;
+  }
+
+  .sobre-nos-header h1 {
+    color: var(--azul-marinho);
+    font-size: 2.5rem;
+    margin-bottom: 15px;
+    font-weight: 600;
+  }
+
+  .sobre-nos-header p {
+    font-size: 1.1rem;
+    color: var(--verde-escuro-letras);
+    line-height: 1.6;
+  }
+
+  /* 2. Grid de 2 colunas (Missão e Transparência) */
+  .cards-grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 30px;
+    margin-bottom: 40px;
+  }
+
+  /* Título "Funcionalidades Principais" */
+  .section-title {
+    color: var(--azul-marinho);
+    font-size: 2rem;
+    font-weight: 600;
+    text-align: center;
+    margin-bottom: 30px;
+  }
+
+  /* 3. Grid de 3 colunas (Funcionalidades) */
+  .cards-grid-3 {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 30px;
+  }
+
+  /* Estilo dos cards - Usando a classe .card do seu base.html 
+     e adicionando estilos específicos de texto.
+  */
+  .card h3 {
+    color: var(--azul-marinho);
+    font-size: 1.4rem;
+    margin-bottom: 15px;
+    font-weight: 600;
+  }
+
+  .card p {
+    color: var(--verde-escuro-letras);
+    line-height: 1.6;
+    font-size: 0.95rem;
+  }
+
+  .card p strong {
+    color: var(--verde-escuro-letras);
+    font-weight: 700;
+  }
+
+  /* Estilo para os cards de funcionalidade (os 3 de baixo) */
+  .func-card {
+    text-align: center;
+  }
+
+  .func-card i {
+    /* Usando ícones do FontAwesome 6 (já importado no base.html) */
+    font-size: 3rem;
+    color: var(--verde);
+    margin-bottom: 20px;
+  }
+
+  .func-card h3 {
+    font-size: 1.25rem;
+  }
+  
+  /* --- Responsividade --- */
+  @media (max-width: 900px) {
+    .cards-grid-2 {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  @media (max-width: 768px) {
+    .cards-grid-3 {
+      grid-template-columns: 1fr;
+    }
+    .sobre-nos-header h1 {
+        font-size: 2rem;
+    }
+    .section-title {
+        font-size: 1.8rem;
+    }
+  }
+</style>
+
+<main class="sobre-nos-container">
+  
+  <section class="sobre-nos-header">
+    <h1>Sobre o EduAvalia</h1>
+    <p>
+      O <strong>EduAvalia</strong> é uma plataforma criada com o objetivo de facilitar a busca e a escolha de professores e
+      disciplinas pelos alunos da nossa faculdade, fomentando uma comunidade acadêmica mais informada e
+      transparente.
+    </p>
+  </section>
+
+  <section class="cards-grid-2">
+    <div class="card">
+      <h3>Nossa Missão</h3>
+      <p>
+        Nossa missão é empoderar os estudantes, fornecendo dados e avaliações que ajudem na tomada de decisão sobre
+        quais professores e disciplinas cursar, contribuindo para a melhoria contínua da qualidade do ensino.
+      </p>
+    </div>
+    <div class="card">
+      <h3>Transparência e Anonimato</h3>
+      <p>
+        Honestidade é a base para o crescimento. Por isso, garantimos a <strong>transparência total</strong> sobre como seus
+        dados são tratados:
+      </p>
+      <p style="margin-top: 10px;">
+        <strong>Votações e Avaliações Anônimas:</strong> Todas as suas avaliações, notas e comentários sobre
+        professores e disciplinas são totalmente anônimos.
+      </p>
+      <p style="margin-top: 10px;">
+        <strong>Segurança dos Dados:</strong> Mesmo que você precise estar logado para acessar e utilizar a
+        plataforma, a informação de qual aluno realizou uma avaliação NÃO é persistida em nosso banco de
+        dados. Uma vez submetida, a avaliação é desvinculada de sua identidade.
+      </p>
+    </div>
+  </section>
+
+  <h2 class="section-title">Funcionalidades Principais</h2>
+  
+  <section class="cards-grid-3">
+    <div class="card func-card">
+      <i class="fa-solid fa-magnifying-glass"></i>
+      <h3>Busca Facilitada:</h3>
+      <p>
+        Nossa missão é empoderar os estudantes, fornecendo dados e avaliações que ajudem na tomada de decisão sobre quais
+        professores e disciplinas cursar, contribuindo para a melhoria contínua da qualidade do ensino.
+      </p>
+    </div>
+
+    <div class="card func-card">
+      <i class="fa-solid fa-comments"></i>
+      <h3>Comentários com feedback:</h3>
+      <p>
+        Os comentários anônimos de outros alunos (incluindo botões "Gostei" (like) e "Não Gostei" (dislike) para
+        que você possa avaliar a utilidade e relevância da opinião.)
+      </p>
+    </div>
+
+    <div class="card func-card">
+      <i class="fa-solid fa-sliders"></i>
+      <h3>Comparação de professores:</h3>
+      <p>
+        Para melhorar a sua experiência na escolha do professor, você pode comparar lado a lado os que você estiver
+        indeciso.
+      </p>
+    </div>
+  </section>
+
+</main>
+
+{% endblock content %}

@@ -688,3 +688,107 @@ def editar_professor(request, professor_id):
         'disciplinas_atuais': disciplinas_atuais
     }
     return render(request, 'avaliacoes/editar_professor.html', context)
+
+def sugestoes_professores_api(request):
+    term = request.GET.get('term', '').strip()
+    sugestoes = []
+    
+    # Não busca se o termo for muito curto
+    if len(term) < 2:
+        return JsonResponse({'sugestoes': []})
+    
+    # Busca por nome ou sobrenome
+    professores = Professor.objects.filter(
+        Q(user__first_name__icontains=term) |
+        Q(user__last_name__icontains=term)
+    ).select_related('user')[:10] # Limita a 10 sugestões
+    
+    # Cria uma lista de nomes completos, sem duplicatas
+    sugestoes_set = set(prof.user.get_full_name() for prof in professores)
+    
+    return JsonResponse({'sugestoes': list(sugestoes_set)})
+
+def sugestoes_disciplinas_api(request):
+    term = request.GET.get('term', '').strip()
+    
+    if len(term) < 2:
+        return JsonResponse({'sugestoes': []})
+    
+    # Busca por nome da matéria
+    disciplinas = Materia.objects.filter(
+        nome__icontains=term
+    ).values_list('nome', flat=True)[:10] # Limita a 10 sugestões
+    
+    # Remove duplicatas
+    sugestoes_set = set(disciplinas)
+    
+    return JsonResponse({'sugestoes': list(sugestoes_set)})
+
+@login_required(login_url='login')
+def sobre_nos(request):
+    """
+    Renderiza a página 'Sobre Nós'.
+    """
+    return render(request, 'avaliacoes/sobre_nos.html')
+
+@login_required(login_url='login')
+def comparacao_disciplina(request):
+    """
+    Renderiza a página de comparação.
+    Busca uma disciplina e calcula as médias de categoria para 
+    cada professor que a ministra.
+    """
+    
+    query_disciplina = request.GET.get('q_disciplina', '').strip()
+    context = {
+        'query_disciplina': query_disciplina,
+        'resultados': [],
+        'materia_encontrada': None
+    }
+
+    if len(query_disciplina) > 0:
+        # 1. Encontra a matéria (disciplina)
+        materia = Materia.objects.filter(nome__icontains=query_disciplina).first()
+        
+        if materia:
+            context['materia_encontrada'] = materia
+            
+            # 2. Encontra todos os 'DisciplinaPessoa' (professores) para essa matéria
+            #    e usa annotate para calcular as médias de cada categoria
+            resultados = DisciplinaPessoa.objects.filter(
+                disciplina=materia
+            ).select_related(
+                'pessoa', 'pessoa__professor', 'disciplina'
+            ).annotate(
+                # Média de Didática
+                media_didatica=Avg(
+                    'avaliacoes__categorias_avaliacao__nota',
+                    filter=Q(avaliacoes__categorias_avaliacao__categoria__nome_categoria='Didática')
+                ),
+                # Média de Dificuldade
+                media_dificuldade=Avg(
+                    'avaliacoes__categorias_avaliacao__nota',
+                    filter=Q(avaliacoes__categorias_avaliacao__categoria__nome_categoria='Dificuldade')
+                ),
+                # Média de Relacionamento
+                media_relacionamento=Avg(
+                    'avaliacoes__categorias_avaliacao__nota',
+                    filter=Q(avaliacoes__categorias_avaliacao__categoria__nome_categoria='Relacionamento')
+                ),
+                # Média de Pontualidade
+                media_pontualidade=Avg(
+                    'avaliacoes__categorias_avaliacao__nota',
+                    filter=Q(avaliacoes__categorias_avaliacao__categoria__nome_categoria='Pontualidade')
+                )
+            ).filter(
+                # Garante que só apareçam professores
+                pessoa__user_type='professor' 
+            ).order_by('pessoa__first_name') # Ordena por nome
+            
+            context['resultados'] = resultados
+        
+        else:
+            if query_disciplina:
+                messages.warning(request, f"Nenhuma disciplina encontrada com o termo '{query_disciplina}'.")
+
+    return render(request, 'avaliacoes/comparacao.html', context)
