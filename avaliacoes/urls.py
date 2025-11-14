@@ -20,6 +20,11 @@ urlpatterns = [
     path('api/salvar-avaliacao/', views.salvar_avaliacao_api, name='salvar_avaliacao_api'),
     path('api/salvar-comentario/', views.salvar_comentario_api, name='salvar_comentario_api'),
 
+# --- ADICIONE ESTAS DUAS LINHAS ---
+    path('api/sugestoes-professores/', views.sugestoes_professores_api, name='sugestoes_professores_api'),
+    path('api/sugestoes-disciplinas/', views.sugestoes_disciplinas_api, name='sugestoes_disciplinas_api'),
+    # --- FIM DA ADIÇÃO ---
+
     path('avaliar/', views.enviar_avaliacao, name='enviar_avaliacao'),
     path('obrigado/', views.obrigado, name='obrigado'),
 
@@ -33,6 +38,8 @@ urlpatterns = [
 
     path('professores/<int:professor_id>/', views.detalhes_professor, name='detalhes_professor'),
     path('ranking/', views.ranking_geral, name='ranking_geral'),
+
+    
 ]
 
 if settings.DEBUG:

@@ -688,3 +688,38 @@ def editar_professor(request, professor_id):
         'disciplinas_atuais': disciplinas_atuais
     }
     return render(request, 'avaliacoes/editar_professor.html', context)
+
+def sugestoes_professores_api(request):
+    term = request.GET.get('term', '').strip()
+    sugestoes = []
+    
+    # Não busca se o termo for muito curto
+    if len(term) < 2:
+        return JsonResponse({'sugestoes': []})
+    
+    # Busca por nome ou sobrenome
+    professores = Professor.objects.filter(
+        Q(user__first_name__icontains=term) |
+        Q(user__last_name__icontains=term)
+    ).select_related('user')[:10] # Limita a 10 sugestões
+    
+    # Cria uma lista de nomes completos, sem duplicatas
+    sugestoes_set = set(prof.user.get_full_name() for prof in professores)
+    
+    return JsonResponse({'sugestoes': list(sugestoes_set)})
+
+def sugestoes_disciplinas_api(request):
+    term = request.GET.get('term', '').strip()
+    
+    if len(term) < 2:
+        return JsonResponse({'sugestoes': []})
+    
+    # Busca por nome da matéria
+    disciplinas = Materia.objects.filter(
+        nome__icontains=term
+    ).values_list('nome', flat=True)[:10] # Limita a 10 sugestões
+    
+    # Remove duplicatas
+    sugestoes_set = set(disciplinas)
+    
+    return JsonResponse({'sugestoes': list(sugestoes_set)})
