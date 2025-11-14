@@ -25,6 +25,9 @@ from django.views.decorators.http import require_POST
 from django.utils import timezone
 from django.db import IntegrityError # Import adicionado
 
+
+from unidecode import unidecode
+
 @login_required(login_url='login')
 
 
@@ -693,9 +696,9 @@ def sugestoes_professores_api(request):
     term = request.GET.get('term', '').strip()
     sugestoes = []
     
-    # Não busca se o termo for muito curto
-    if len(term) < 2:
-        return JsonResponse({'sugestoes': []})
+    # # Não busca se o termo for muito curto
+    # if len(term) < 2:
+    #     return JsonResponse({'sugestoes': []})
     
     # Busca por nome ou sobrenome
     professores = Professor.objects.filter(
@@ -710,16 +713,19 @@ def sugestoes_professores_api(request):
 
 def sugestoes_disciplinas_api(request):
     term = request.GET.get('term', '').strip()
+    normalized_term = unidecode(term).lower()
     
-    if len(term) < 2:
-        return JsonResponse({'sugestoes': []})
     
-    # Busca por nome da matéria
-    disciplinas = Materia.objects.filter(
-        nome__icontains=term
-    ).values_list('nome', flat=True)[:10] # Limita a 10 sugestões
+    try:
+        disciplinas = Materia.objects.filter(
+            nome_normalized__icontains=normalized_term
+        ).values_list('nome', flat=True)[:10] 
+        
+    except AttributeError:
+        disciplinas = Materia.objects.filter(
+            nome__icontains=term 
+        ).values_list('nome', flat=True)[:10]
     
-    # Remove duplicatas
     sugestoes_set = set(disciplinas)
     
     return JsonResponse({'sugestoes': list(sugestoes_set)})

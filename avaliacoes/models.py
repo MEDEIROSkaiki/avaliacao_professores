@@ -1,5 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
+from unidecode import unidecode
 
 class CustomUser(AbstractUser):
     USER_TYPE_CHOICES = (
@@ -18,13 +19,23 @@ class CustomUser(AbstractUser):
         return self.username
 
 class Materia(models.Model):
-    nome = models.CharField(max_length=100)
+    nome = models.CharField(max_length=100) # Este campo armazena o nome real ("Química")
     codigo = models.CharField(max_length=20, unique=True)
     data_inicio = models.DateField()
+    
+    # Campo auxiliar SÓ PARA BUSCA (armazena "quimica")
+    # db_index=True é crucial para performance na busca.
+    nome_normalized = models.CharField(max_length=100, blank=True, db_index=True) 
+
+    def save(self, *args, **kwargs):
+        # A normalização (remoção de acentos) afeta SOMENTE o campo 'nome_normalized'.
+        # O campo 'self.nome' permanece inalterado.
+        self.nome_normalized = unidecode(self.nome).lower()
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f"{self.codigo} - {self.nome}"
-
+    
 class Professor(models.Model):
     user = models.OneToOneField(CustomUser, on_delete=models.CASCADE, limit_choices_to={'user_type': 'professor'})
     foto = models.ImageField(upload_to='professores_fotos/', blank=True, null=True)

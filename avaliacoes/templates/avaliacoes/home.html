@@ -26,6 +26,7 @@
         </form>
     </div>
 
+
     <div class="average-card">
         <div class="average-text">
             <h3>Avaliação Geral da faculdade</h3>
@@ -33,8 +34,8 @@
         
         <div class="average-score" style="position: relative;">
             <div class="donut-chart" style="
-                width: 100px;
-                height: 100px;
+                width: 250px;
+                height: 100%;
                 border-radius: 50%;
                 background: conic-gradient(var(--verde) {{ media_percent_faculdade|floatformat:0 }}%, var(--azul-marinho) 0); 
                 display: flex;
@@ -42,16 +43,16 @@
                 justify-content: center;">
                 
                 <div style="
-                    width: 80px;
-                    height: 80px;
+                    width: 170px;
+                    height: 170px;
                     background-color: white;
                     border-radius: 50%;
                     text-align: center;
                     padding-top: 15px;
                     box-sizing: border-box;">
                     
-                    <strong style="font-size: 1.5rem; color: var(--verde);">{{ media_geral_faculdade|floatformat:2 }}</strong>
-                    <span style="font-size: 0.7rem; color: var(--cinza-escuro-letras); display: block; margin-top: -5px;">Média</span>
+                    <strong style="font-size: 3.5rem; color: var(--verde);">{{ media_geral_faculdade|floatformat:2 }}</strong>
+                    <span style="font-size: 1.5rem; color: var(--cinza-escuro-letras); display: block; margin-top: -5px;">Média</span>
                 </div>
             </div>
         </div>
@@ -80,21 +81,41 @@ document.addEventListener('DOMContentLoaded', function() {
     // --- FUNÇÕES AUXILIARES ---
     
     // Função para buscar sugestões na API
+    let debounceTimer;
+
     async function getSuggestions(url, term) {
+        // 1. Limpa o timer anterior para 'resetar' o atraso a cada nova chamada
+        clearTimeout(debounceTimer);
+
         // Evita chamadas de API desnecessárias
-        if (term.length < 2) {
-            return [];
-        }
-        try {
-            const response = await fetch(`${url}?term=${encodeURIComponent(term)}`);
-            if (!response.ok) return [];
-            const data = await response.json();
-            return data.sugestoes || [];
-        } catch (error) {
-            console.error('Erro ao buscar sugestões:', error);
-            return [];
-        }
+
+
+        // Retorna uma Promise para lidar com o atraso assíncrono
+        return new Promise((resolve, reject) => {
+            // 2. Define o novo timer
+            debounceTimer = setTimeout(async () => {
+                try {
+                    // Lógica de fetch real (só será executada após 300ms de inatividade)
+                    const response = await fetch(`${url}?term=${encodeURIComponent(term)}`);
+
+                    if (!response.ok) {
+                        resolve([]); // Resolve com array vazio em caso de erro de resposta HTTP
+                        return;
+                    }
+
+                    const data = await response.json();
+                    
+                    // 3. Resolve a Promise com os dados
+                    resolve(data.sugestoes || []);
+                } catch (error) {
+                    console.error('Erro ao buscar sugestões:', error);
+                    // 3. Resolve a Promise com array vazio em caso de erro na requisição
+                    resolve([]); 
+                }
+            }, 300); // <-- O delay de 300 milissegundos
+        });
     }
+
 
     // Função para atualizar o <datalist>
     function updateDatalist(datalistElement, suggestions) {
