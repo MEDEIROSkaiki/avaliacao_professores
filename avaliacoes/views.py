@@ -730,3 +730,65 @@ def sobre_nos(request):
     Renderiza a página 'Sobre Nós'.
     """
     return render(request, 'avaliacoes/sobre_nos.html')
+
+@login_required(login_url='login')
+def comparacao_disciplina(request):
+    """
+    Renderiza a página de comparação.
+    Busca uma disciplina e calcula as médias de categoria para 
+    cada professor que a ministra.
+    """
+    
+    query_disciplina = request.GET.get('q_disciplina', '').strip()
+    context = {
+        'query_disciplina': query_disciplina,
+        'resultados': [],
+        'materia_encontrada': None
+    }
+
+    if len(query_disciplina) > 0:
+        # 1. Encontra a matéria (disciplina)
+        materia = Materia.objects.filter(nome__icontains=query_disciplina).first()
+        
+        if materia:
+            context['materia_encontrada'] = materia
+            
+            # 2. Encontra todos os 'DisciplinaPessoa' (professores) para essa matéria
+            #    e usa annotate para calcular as médias de cada categoria
+            resultados = DisciplinaPessoa.objects.filter(
+                disciplina=materia
+            ).select_related(
+                'pessoa', 'pessoa__professor', 'disciplina'
+            ).annotate(
+                # Média de Didática
+                media_didatica=Avg(
+                    'avaliacoes__categorias_avaliacao__nota',
+                    filter=Q(avaliacoes__categorias_avaliacao__categoria__nome_categoria='Didática')
+                ),
+                # Média de Dificuldade
+                media_dificuldade=Avg(
+                    'avaliacoes__categorias_avaliacao__nota',
+                    filter=Q(avaliacoes__categorias_avaliacao__categoria__nome_categoria='Dificuldade')
+                ),
+                # Média de Relacionamento
+                media_relacionamento=Avg(
+                    'avaliacoes__categorias_avaliacao__nota',
+                    filter=Q(avaliacoes__categorias_avaliacao__categoria__nome_categoria='Relacionamento')
+                ),
+                # Média de Pontualidade
+                media_pontualidade=Avg(
+                    'avaliacoes__categorias_avaliacao__nota',
+                    filter=Q(avaliacoes__categorias_avaliacao__categoria__nome_categoria='Pontualidade')
+                )
+            ).filter(
+                # Garante que só apareçam professores
+                pessoa__user_type='professor' 
+            ).order_by('pessoa__first_name') # Ordena por nome
+            
+            context['resultados'] = resultados
+        
+        else:
+            if query_disciplina:
+                messages.warning(request, f"Nenhuma disciplina encontrada com o termo '{query_disciplina}'.")
+
+    return render(request, 'avaliacoes/comparacao.html', context)
