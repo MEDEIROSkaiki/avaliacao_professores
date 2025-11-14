@@ -1,158 +1,299 @@
 {% extends 'base.html' %}
-{% load static %}
 
 {% block content %}
 
 <style>
-    /* ... (Todo o seu CSS de .ranking-container, .ranking-carousel, etc. continua o mesmo) ... */
-    .ranking-container {
-        width: 100%;
+    /* ==============================================
+  CSS PARA O RANKING (ADMIN E ALUNO)
+  ==============================================
+  */
+
+    .ranking-wrapper {
+        /* Usa o mesmo layout do admin, mas sem o painel lateral */
+        width: 90%;
         max-width: 1200px;
         margin: 40px auto;
-        padding: 0 40px;
-        box-sizing: border-box;
+        flex-grow: 1;
     }
 
-    .ranking-container h1 {
-        font-size: 2.5rem;
-        font-weight: 700;
+    .ranking-header {
+        text-align: center;
+        margin-bottom: 40px;
+    }
+
+    .ranking-header h1 {
         color: var(--azul-marinho);
-        margin-bottom: 30px;
+        font-size: 2rem;
+        font-weight: 700;
     }
 
-    .ranking-carousel {
+    .ranking-header h2 {
+        color: var(--verde-escuro-letras);
+        font-weight: 500;
+    }
+
+    /* ---------------------------------
+  VISUALIZAÇÃO DO ALUNO (CARDS)
+  ---------------------------------
+  */
+    .student-ranking-container {
         display: flex;
-        gap: 30px;
-        overflow-x: auto;
-        padding: 20px 10px;
-        -webkit-overflow-scrolling: touch;
-        scrollbar-width: none;
-        -ms-overflow-style: none;
-    }
-    .ranking-carousel::-webkit-scrollbar {
-        display: none;
+        /* A CORREÇÃO PRINCIPAL ESTÁ AQUI: 
+      flex-wrap: wrap; garante que os cards quebrem a linha 
+      em telas menores ou se forem muitos.
+    */
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 25px;
+        padding: 0;
     }
 
-    .ranking-card {
-        flex: 0 0 280px;
+    .student-rank-card {
         background-color: #fff;
         border-radius: 12px;
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
-        padding: 25px;
+        padding: 30px;
         text-align: center;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.07);
+        border: 1px solid var(--painel-central);
+
+        /* --- MUDANÇAS AQUI --- */
+        /* Em vez de 'width: 280px;', usamos flexbox: */
+        flex: 1;
+        /* Faz o card ser flexível (crescer/diminuir) */
+        max-width: 215px;
+        /* Largura MÁXIMA (5 cabem na tela de 1200px) */
+        min-width: 200px;
+        /* Largura MÍNIMA antes de quebrar a linha */
+        /* --- FIM DA MUDANÇA --- */
+
+        display: flex;
+        flex-direction: column;
+        align-items: center;
         transition: transform 0.3s ease, box-shadow 0.3s ease;
-        position: relative;
-    }
-    
-    .ranking-card:hover,
-    .ranking-card.active {
-        transform: scale(1.05);
-        box-shadow: 0 8px 25px rgba(24, 165, 148, 0.3);
-        border: 2px solid var(--verde);
     }
 
-    .ranking-number {
-        position: absolute;
-        top: 15px;
-        left: 20px;
-        font-size: 1.8rem;
-        font-weight: 800;
-        color: var(--azul-acinzentado);
-        opacity: 0.5;
+    .student-rank-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
     }
-    
-    .ranking-score {
-        position: absolute;
-        top: 15px;
-        right: 20px;
-        font-size: 1.1rem;
+
+    /* O NÚMERO DO RANKING (1, 2, 3...) */
+    .rank-number {
+        font-size: 3.5rem;
         font-weight: 700;
         color: var(--verde);
-        background-color: #d4edda;
-        padding: 4px 8px;
-        border-radius: 6px;
+        line-height: 1;
     }
 
-    .ranking-card-image {
-        width: 150px;
-        height: 150px;
+    /* O '°' (símbolo de ordinal) */
+    .rank-number sup {
+        font-size: 1.5rem;
+        font-weight: 600;
+        top: -1.2em;
+        /* Ajusta a altura do símbolo */
+    }
+
+    .card-foto-rank {
+        width: 100px;
+        height: 100px;
         border-radius: 50%;
-        margin: 20px auto 20px auto;
+        margin: 15px auto;
+        background-color: var(--painel-central);
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 5rem;
         color: var(--azul-acinzentado);
-        border: 7px solid var(--verde);
-        background-color: var(--painel-central);
+        font-size: 3.5rem;
+        border: 4px solid var(--painel-central);
     }
-    
-    .ranking-card-image img {
+
+    .card-foto-rank img {
         width: 100%;
         height: 100%;
         object-fit: cover;
         border-radius: 50%;
     }
 
-    .ranking-card h3 {
-        font-size: 1.3rem;
-        font-weight: 600;
+    .rank-prof-name {
+        font-size: 1.25rem;
         color: var(--azul-marinho);
-        margin: 0;
-    }
-    
-    .ranking-card p {
-        font-size: 1.1rem; /* Aumentado */
-        color: var(--verde-escuro-letras);
-        margin-top: 5px;
-        font-weight: 600; /* Destaque */
-    }
-    /* NOVO: Estilo para o nome do professor (menor) */
-    .ranking-card .professor-name {
-        font-size: 0.9rem;
-        color: var(--cinza-escuro-letras);
-        font-weight: 500;
-        margin-top: 5px;
+        font-weight: 600;
+        margin-bottom: 5px;
     }
 
+    .rank-disciplina {
+        font-size: 0.9rem;
+        color: var(--verde-escuro-letras);
+        margin-bottom: 20px;
+        display: block;
+        min-height: 2.5em;
+        /* Garante altura mesmo se o nome for curto */
+    }
+
+    /* Botão (reaproveita a classe .btn de base.html) */
+    .btn-ver-perfil {
+        margin-top: auto;
+        /* Empurra o botão para o fim do card */
+        padding: 12px 20px;
+        border: none;
+        border-radius: 8px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        font-size: 0.95rem;
+        color: #fff;
+        background-color: var(--verde);
+        text-align: center;
+        width: 100%;
+    }
+
+    .btn-ver-perfil:hover {
+        opacity: 0.85;
+        transform: translateY(-2px);
+    }
+
+    /* ---------------------------------
+  VISUALIZAÇÃO DO ADMIN (TABELA)
+  ---------------------------------
+  */
+    .admin-ranking-panel {
+        /* Reutiliza o estilo do painel de admin */
+        flex-basis: 100%;
+        max-width: 1000px;
+        background-color: #fff;
+        border-radius: 12px;
+        padding: 30px;
+        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+        margin: 0 auto;
+        /* Centraliza o painel */
+    }
+
+    .admin-ranking-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 20px;
+    }
+
+    .admin-ranking-table th,
+    .admin-ranking-table td {
+        padding: 15px;
+        text-align: left;
+        border-bottom: 1px solid var(--painel-central);
+    }
+
+    .admin-ranking-table th {
+        background-color: #f8f9fa;
+        /* Um cinza bem claro */
+        color: var(--azul-marinho);
+        font-size: 0.9rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .admin-ranking-table td {
+        color: var(--verde-escuro-letras);
+        font-weight: 500;
+    }
+
+    .admin-ranking-table .rank-col {
+        width: 10%;
+        text-align: center;
+        font-weight: 700;
+        font-size: 1.1rem;
+    }
+
+    .admin-ranking-table .prof-col {
+        width: 35%;
+        color: var(--azul-marinho);
+    }
+
+    .admin-ranking-table .disc-col {
+        width: 35%;
+    }
+
+    .admin-ranking-table .nota-col {
+        width: 20%;
+        font-weight: 700;
+        color: var(--verde);
+        font-size: 1.1rem;
+
+        /* --- ADICIONE ESSAS DUAS LINHAS --- */
+        white-space: nowrap;
+        /* Impede a quebra de linha */
+        text-align: center;
+        /* Centraliza o texto (bônus) */
+    }
 </style>
 
-<main class="ranking-container">
-    <h1>Disciplinas Melhores Avaliadas</h1>
+<div class="ranking-wrapper">
 
-    <div class="ranking-carousel">
-        
-        {% for dp in ranking_disciplinas %}
-        
-        <a href="{% url 'detalhes_professor' dp.pessoa.professor.id %}" style="text-decoration: none;">
-            <div class="ranking-card">
-                
-                <div class="ranking-number">
-                    #{{ forloop.counter }}
-                </div>
-                
-                <div class="ranking-score">
-                    <i class="fa-solid fa-star" style="font-size: 0.9rem;"></i>
-                    {{ dp.media_nota|floatformat:1 }}
-                </div>
-
-                <div class="ranking-card-image">
-                    {% if dp.pessoa.professor.foto %}
-                        <img src="{{ dp.pessoa.professor.foto.url }}" alt="Foto de {{ dp.pessoa.get_full_name }}">
-                    {% else %}
-                        <i class="fa-solid fa-user"></i>
-                    {% endif %}
-                </div>
-
-                <p>{{ dp.disciplina.nome }}</p>
-                
-                <h3 class="professor-name">{{ dp.pessoa.get_full_name }}</h3>
-
-            </div>
-        </a>
-        {% empty %}
-            <p style="color: var(--verde-escuro-letras);">Nenhuma disciplina foi avaliada ainda.</p>
-        {% endfor %}
+    {% if request.user.is_staff %}
+    <div class="admin-ranking-panel">
+        <div class="ranking-header">
+            <h1>Ranking de Avaliações (Admin)</h1>
+            <h2>Top 10 melhores avaliações (por disciplina/professor)</h2>
         </div>
-</main>
+
+        <table class="admin-ranking-table">
+            <thead>
+                <tr>
+                    <th class="rank-col">Rank</th>
+                    <th class="prof-col">Professor</th>
+                    <th class="disc-col">Disciplina</th>
+                    <th class="nota-col">Média da Turma</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for dp in ranking_disciplinas %}
+                <tr>
+                    <td class="rank-col">#{{ forloop.counter }}</td>
+                    <td class="prof-col">{{ dp.pessoa.get_full_name }}</td>
+                    <td class="disc-col">{{ dp.disciplina.nome }}</td>
+                    <td class="nota-col">{{ dp.media_nota|floatformat:2 }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="4" style="text-align: center; padding: 30px;">
+                        Ainda não há avaliações suficientes para gerar um ranking.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {% else %}
+    <div class="ranking-header">
+        <h1>Melhores Avaliados</h1>
+        <h2>O Top 5 da universidade, segundo os alunos</h2>
+    </div>
+
+    <div class="student-ranking-container">
+        {% for dp in ranking_disciplinas %}
+        <div class="student-rank-card">
+            <div class="card-foto-rank">
+                {% if dp.pessoa.professor.foto %}
+                <img src="{{ dp.pessoa.professor.foto.url }}" alt="Foto de {{ dp.pessoa.get_full_name }}">
+                {% else %}
+                <i class="fa-solid fa-user"></i>
+                {% endif %}
+            </div>
+
+            <h4 class="rank-prof-name">{{ dp.pessoa.get_full_name|default:dp.pessoa.username }}</h4>
+            <span class="rank-disciplina">{{ dp.disciplina.nome }}</span>
+
+            <a href="{% url 'detalhes_professor' dp.pessoa.professor.id %}" class="btn-ver-perfil">
+                Ver Perfil
+            </a>
+        </div>
+        {% empty %}
+        <p style="color: var(--verde-escuro-letras); font-size: 1.1rem;">
+            Ainda não há avaliações suficientes para gerar um ranking.
+        </p>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+</div>
+
 {% endblock content %}
