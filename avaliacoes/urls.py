@@ -38,7 +38,7 @@ urlpatterns = [
 
     path('professores/<int:professor_id>/', views.detalhes_professor, name='detalhes_professor'),
     path('ranking/', views.ranking_geral, name='ranking_geral'),
-
+    path('sobre-nos/', views.sobre_nos, name='sobre_nos'),
     
 ]
 

@@ -723,3 +723,10 @@ def sugestoes_disciplinas_api(request):
     sugestoes_set = set(disciplinas)
     
     return JsonResponse({'sugestoes': list(sugestoes_set)})
+
+@login_required(login_url='login')
+def sobre_nos(request):
+    """
+    Renderiza a página 'Sobre Nós'.
+    """
+    return render(request, 'avaliacoes/sobre_nos.html')
