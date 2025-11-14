@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<main class="admin-container">
+    <section class="admin-panel" style="max-width: 900px;">
+        <h1>Selecionar Professor</h1>
+        <p>Clique no professor que você deseja editar ou excluir.</p>
+        
+        <div class="professor-list-container" style="margin-top: 20px;">
+            {% for professor in professores %}
+            <a href="{% url 'editar_professor' professor.id %}" class="btn" style="
+                display: block; 
+                width: 100%; 
+                text-align: left; 
+                margin-bottom: 10px; 
+                background-color: var(--painel-central); 
+                color: var(--azul-marinho);
+                font-weight: 500;
+                padding: 16px;
+            ">
+                {{ professor.user.get_full_name }} ({{ professor.user.email }})
+            </a>
+            {% empty %}
+            <p>Nenhum professor cadastrado.</p>
+            {% endfor %}
+        </div>
+    </section>
+</main>
+{% endblock content %}

@@ -2,7 +2,11 @@
 
 from django.shortcuts import render, redirect, get_object_or_404
 from django.http import HttpResponse, JsonResponse
-from .forms import AvaliacaoForm, MateriaForm, ProfessorForm, UserForm
+from .forms import (
+    AvaliacaoForm, MateriaForm, ProfessorForm, UserForm,
+    # Imports adicionados:
+    UserProfileForm, DisciplinaPessoaForm 
+)
 from .models import (
     Avaliacao, Professor, CustomUser, Materia, DisciplinaPessoa, 
     Aluno, Categoria, AvaliacaoCategoria
@@ -19,8 +23,7 @@ from django.core.validators import validate_email
 from django.core.exceptions import ValidationError
 from django.views.decorators.http import require_POST
 from django.utils import timezone
-
-
+from django.db import IntegrityError # Import adicionado
 
 @login_required(login_url='login')
 
@@ -607,3 +610,81 @@ def ranking_geral(request):
     }
     
     return render(request, 'avaliacoes/ranking_geral.html', context)
+
+@staff_member_required
+def selecionar_professor_para_editar(request):
+    professores = Professor.objects.all().select_related('user').order_by('user__first_name')
+    return render(request, 'avaliacoes/selecionar_professor_para_editar.html', {
+        'professores': professores
+    })
+
+
+@staff_member_required # Garante que só admins podem editar
+def editar_professor(request, professor_id):
+    # Pega os objetos principais
+    professor = get_object_or_404(Professor, pk=professor_id)
+    user = professor.user
+    
+    # Pega as disciplinas que o professor JÁ ministra
+    disciplinas_atuais = DisciplinaPessoa.objects.filter(pessoa=user)
+
+    if request.method == 'POST':
+        # --- LÓGICA PARA ATUALIZAR O PERFIL ---
+        if 'submit_profile' in request.POST:
+            user_form = UserProfileForm(request.POST, instance=user, prefix='user')
+            professor_form = ProfessorForm(request.POST, request.FILES, instance=professor, prefix='prof')
+            
+            if user_form.is_valid() and professor_form.is_valid():
+                user_form.save()
+                professor_form.save()
+                messages.success(request, 'Perfil do professor atualizado com sucesso!')
+                return redirect('editar_professor', professor_id=professor.id)
+
+        # --- LÓGICA PARA ADICIONAR DISCIPLINA ---
+        elif 'submit_disciplina' in request.POST:
+            disciplina_form = DisciplinaPessoaForm(request.POST, prefix='disc')
+            
+            if disciplina_form.is_valid():
+                materia = disciplina_form.cleaned_data['disciplina']
+                try:
+                    # Tenta criar a nova relação
+                    obj, created = DisciplinaPessoa.objects.get_or_create(
+                        pessoa=user,
+                        disciplina=materia
+                    )
+                    if created:
+                        messages.success(request, f"Disciplina '{materia.nome}' adicionada ao professor.")
+                    else:
+                        messages.warning(request, f"O professor já está cadastrado nessa disciplina.")
+                except IntegrityError:
+                     messages.error(request, "Erro ao tentar adicionar a disciplina.")
+                
+                return redirect('editar_professor', professor_id=professor.id)
+        
+        # --- NOVA LÓGICA DE EXCLUSÃO ---
+        elif 'submit_delete' in request.POST:
+            try:
+                nome_professor = professor.user.get_full_name()
+                # Deleta o CustomUser. O Professor profile e DisciplinaPessoa serão deletados em cascata.
+                professor.user.delete() 
+                messages.success(request, f"Professor '{nome_professor}' foi excluído com sucesso.")
+                return redirect('lista_professores') # Redireciona para a lista de professores
+            except Exception as e:
+                messages.error(request, f"Erro ao excluir professor: {e}")
+                return redirect('editar_professor', professor_id=professor.id)
+        # --- FIM DA NOVA LÓGICA ---
+
+    # Se for um request GET, inicializa os formulários
+    else:
+        user_form = UserProfileForm(instance=user, prefix='user')
+        professor_form = ProfessorForm(instance=professor, prefix='prof')
+        disciplina_form = DisciplinaPessoaForm(prefix='disc')
+
+    context = {
+        'professor': professor,
+        'user_form': user_form,
+        'professor_form': professor_form,
+        'disciplina_form': disciplina_form,
+        'disciplinas_atuais': disciplinas_atuais
+    }
+    return render(request, 'avaliacoes/editar_professor.html', context)

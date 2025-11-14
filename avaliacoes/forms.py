@@ -1,5 +1,5 @@
 from django import forms
-from .models import Avaliacao, Professor, Materia, AvaliacaoCategoria, Categoria, DisciplinaPessoa
+from .models import Avaliacao, Professor, Materia, AvaliacaoCategoria, Categoria, DisciplinaPessoa, CustomUser
 from django.contrib.auth.forms import UserCreationForm, UserChangeForm
 from django.contrib.auth import get_user_model
 from .models import CustomUser
@@ -98,3 +98,32 @@ class UserForm(forms.ModelForm):
         if commit:
             user.save()
         return user
+
+# --- NOVOS FORMULÁRIOS ADICIONADOS ---
+
+class UserProfileForm(forms.ModelForm):
+    """
+    Formulário para editar NOME e EMAIL do usuário.
+    """
+    class Meta:
+        model = CustomUser
+        fields = ['first_name', 'last_name', 'email']
+        labels = {
+            'first_name': 'Nome',
+            'last_name': 'Sobrenome',
+            'email': 'Email de Login'
+        }
+
+class DisciplinaPessoaForm(forms.ModelForm):
+    """
+    Formulário para ADICIONAR uma nova disciplina a um professor.
+    """
+    # Filtra o queryset para mostrar apenas as matérias
+    disciplina = forms.ModelChoiceField(
+        queryset=Materia.objects.all().order_by('nome'),
+        label="Selecione a disciplina para adicionar"
+    )
+
+    class Meta:
+        model = DisciplinaPessoa
+        fields = ['disciplina']

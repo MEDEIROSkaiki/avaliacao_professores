@@ -3,7 +3,7 @@
 
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale-1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>EduAvalia</title>
 
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
@@ -344,11 +344,11 @@
     }
 
     .form-group {
-      ...
+      /* ... */
     }
 
     .btn {
-      ...
+      /* ... */
     }
 
     /* ======== NOVO FOOTER ======== */
@@ -413,7 +413,7 @@
 
     /* ... (Seu CSS de Responsividade vai aqui) ... */
     @media (max-width: 768px) {
-      ...
+      /* ... */
     }
 
     /* ============ HOME PAGE DASHBOARD ============ */
@@ -421,7 +421,7 @@
       display: grid;
       grid-template-columns: 1fr 1fr;
       /* Duas colunas principais */
-      gap: 30px;
+      gap: 30px; /* MODIFICADO */
       padding: 0;
       /* Remove o padding padrão do .content */
       background-color: transparent;
@@ -522,8 +522,7 @@
       /* Ocupa as duas colunas */
       display: flex;
       gap: 25px;
-      margin-top: 0px;
-      /* Ajuste para encaixar melhor */
+      margin-top: 0; /* MODIFICADO */
     }
 
     .mini-card {
@@ -664,16 +663,11 @@
       <div class="nav-left">
         <a href="/" class="logo">EduAvalia</a>
         <nav class="menu">
-          <a href="{% url 'home' %}"
-            class="{% if request.resolver_match.url_name == 'home' %}active{% endif %}">Início</a>
-
-          <a href="{% url 'ranking_geral' %}"
-            class="{% if request.resolver_match.url_name == 'ranking_geral' %}active{% endif %}">Ranking Geral</a>
-
-          <a href="/comparacao" class="{% if 'comparacao' in request.path %}active{% endif %}">Comparação</a>
-
-          <a href="#">Sobre Nós</a>
-          <a href="#">Contato</a>
+            <a href="{% url 'home' %}" class="{% if request.resolver_match.url_name == 'home' %}active{% endif %}">Início</a>
+            <a href="{% url 'ranking_geral' %}" class="{% if request.resolver_match.url_name == 'ranking_geral' %}active{% endif %}">Ranking Geral</a>
+            <a href="/comparacao" class="{% if 'comparacao' in request.path %}active{% endif %}">Comparação</a> 
+            <a href="#">Sobre Nós</a>
+            <a href="#">Contato</a>
         </nav>
       </div>
       <div class="nav-right">
@@ -683,59 +677,63 @@
         </div>
 
         <div class="user-dropdown" id="user-dropdown-menu">
-          <div class="sidebar-profile">
+    <div class="sidebar-profile">
+        
+        <div class="profile-pic">
+            {% if request.user.user_type == 'professor' and request.user.professor.foto %}
+                <img src="{{ request.user.professor.foto.url }}" alt="Foto de Perfil" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
+            {% else %}
+                <i class="fa-solid fa-user"></i>
+            {% endif %}
+        </div>
+        
+        <strong>{{ request.user.get_full_name|default:request.user.username }}</strong>
+        <span>{{ request.user.get_user_type_display }}</span>
+    </div>
 
-            <div class="profile-pic">
-              {% if request.user.user_type == 'professor' and request.user.professor.foto %}
-              <img src="{{ request.user.professor.foto.url }}" alt="Foto de Perfil"
-                style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
-              {% else %}
-              <i class="fa-solid fa-user"></i>
-              {% endif %}
-            </div>
-
-            <strong>{{ request.user.get_full_name|default:request.user.username }}</strong>
-            <span>{{ request.user.get_user_type_display }}</span>
-          </div>
-
-          <nav class="sidebar-menu">
-            {% if request.user.is_staff %}
+    <nav class="sidebar-menu">
+        {% if request.user.is_staff %}
             <a href="{% url 'adicionar_usuario' %}"
-              class="{% if request.resolver_match.url_name == 'adicionar_usuario' %}active{% endif %}">
-              Adicionar Usuário
+                class="{% if request.resolver_match.url_name == 'adicionar_usuario' %}active{% endif %}">
+                Adicionar Usuário
+            </a>
+
+            <a href="{% url 'selecionar_professor_para_editar' %}"
+                class="{% if request.resolver_match.url_name == 'selecionar_professor_para_editar' or request.resolver_match.url_name == 'editar_professor' %}active{% endif %}">
+                Editar / Excluir Professor
             </a>
 
             <a href="{% url 'adicionar_disciplina' %}"
-              class="{% if request.resolver_match.url_name == 'adicionar_disciplina' %}active{% endif %}">
-              Adicionar Disciplina
+                class="{% if request.resolver_match.url_name == 'adicionar_disciplina' %}active{% endif %}">
+                Adicionar Disciplina
             </a>
-            {% endif %}
-          </nav>
+        {% endif %}
+    </nav>
+
+    <div class="sidebar-logout">
+        <form action="{% url 'logout' %}" method="post" style="display: inline;">
+            {% csrf_token %}
+            <button type="submit" style="
+                background: none; 
+                border: none; 
+                color: var(--cinza-escuro-letras); 
+                font-weight: 500; 
+                font-size: 1rem; 
+                cursor: pointer; 
+                padding: 0; 
+                font-family: inherit;">
+                Sair
+            </button>
+        </form>
+    </div>
+</div>
+          
 
           <div class="sidebar-logout">
-            <form action="{% url 'logout' %}" method="post" style="display: inline;">
-              {% csrf_token %}
-              <button type="submit" style="
-            background: none; 
-            border: none; 
-            color: var(--cinza-escuro-letras); 
-            font-weight: 500; 
-            font-size: 1rem; 
-            cursor: pointer; 
-            padding: 0; 
-            font-family: inherit;">
-                Sair
-              </button>
-            </form>
+          
           </div>
         </div>
-
-
-        <div class="sidebar-logout">
-
-        </div>
       </div>
-    </div>
 
     </div>
   </header>
@@ -788,4 +786,5 @@
   </script>
 
 </body>
+
 </html>

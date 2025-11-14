@@ -4,16 +4,20 @@
 {% block content %}
 <main class="admin-container">
     <section class="admin-panel">
-        <h1>Lista de Professores Cadastrados</h1>
-
-        {% if request.user.is_staff %}
-        <div style="margin-bottom: 25px; display: flex; justify-content: flex-end;">
-            <a href="{% url 'adicionar_usuario' %}" class="btn">
-                + Novo Usuário
-            </a>
-        </div>
-        {% endif %}
         
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
+            
+            <h1 style="margin-bottom: 0;">Lista de Professores Cadastrados</h1>
+
+            {% if request.user.is_staff %}
+            <div style="display: flex; justify-content: flex-end;">
+                <a href="{% url 'adicionar_usuario' %}" class="btn">
+                    + Novo Usuário
+                </a>
+            </div>
+            {% endif %}
+        
+        </div> 
         <div class="professor-list-container">
             <div class="list-header" style="
                 display: grid; 

@@ -12,6 +12,11 @@ urlpatterns = [
     path('professores/', views.lista_professores, name='lista_professores'),
     path('professores/<int:professor_id>/', views.detalhes_professor, name='detalhes_professor'),
 
+    # --- NOVAS URLS DE EDIÇÃO ---
+    path('professores/<int:professor_id>/editar/', views.editar_professor, name='editar_professor'),
+    path('professores/selecionar/', views.selecionar_professor_para_editar, name='selecionar_professor_para_editar'),
+    # --- FIM ---
+
     path('api/salvar-avaliacao/', views.salvar_avaliacao_api, name='salvar_avaliacao_api'),
     path('api/salvar-comentario/', views.salvar_comentario_api, name='salvar_comentario_api'),
 
