@@ -1,0 +1,21 @@
+# Arquivos e pastas do PyCharm
+.idea/
+
+# Arquivos de cache e compilados do Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Ambiente virtual (se você o cria dentro do projeto)
+.venv/
+venv/
+ENV/
+
+# Arquivos de dependência (opcional, mas recomendado)
+pip-freeze.txt
+requirements.txt
+# (Descomente as duas linhas acima se você *gera* esses arquivos,
+# mas não quer versionar o resultado exato de um 'pip freeze')
+
+# Arquivos de log
+*.log

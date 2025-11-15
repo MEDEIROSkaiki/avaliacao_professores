@@ -588,13 +588,19 @@ def salvar_comentario_api(request):
 @login_required(login_url='login')
 def ranking_geral(request):
     
-    # 1. A unidade de ranking agora é a 'DisciplinaPessoa' (a turma)
+    # 1. Decide o limite (Top 10 para admin, Top 5 para outros)
+    if request.user.is_staff:
+        limite = 10
+    else:
+        limite = 5
+
+    # 2. A unidade de ranking agora é a 'DisciplinaPessoa' (a turma)
     #    Anotamos a média de notas em cada 'DisciplinaPessoa'
     ranking = DisciplinaPessoa.objects.annotate(
         media_nota=Avg('avaliacoes__categorias_avaliacao__nota')
     )
     
-    # 2. Lógica principal do Ranking:
+    # 3. Lógica principal do Ranking:
     #    - Filtra para incluir apenas quem JÁ TEM avaliações (media_nota não é Nula)
     #    - Ordena pela 'media_nota' em ordem descendente
     #    - select_related otimiza a busca, pegando dados do professor e disciplina
@@ -604,12 +610,13 @@ def ranking_geral(request):
         'pessoa', 'pessoa__professor', 'disciplina'
     ).order_by('-media_nota')
     
-    # 3. Limita o ranking (ex: Top 10)
-    ranking_top_10 = ranking_disciplinas[:10]
+    # 4. Limita o ranking (com o limite que definimos)
+    ranking_top = ranking_disciplinas[:limite]
 
     context = {
         # O nome da variável mudou para refletir o que estamos enviando
-        'ranking_disciplinas': ranking_top_10
+        'ranking_disciplinas': ranking_top
+        # O template vai usar 'request.user.is_staff' para decidir como exibir
     }
     
     return render(request, 'avaliacoes/ranking_geral.html', context)
@@ -729,3 +736,72 @@ def sugestoes_disciplinas_api(request):
     sugestoes_set = set(disciplinas)
     
     return JsonResponse({'sugestoes': list(sugestoes_set)})
+
+@login_required(login_url='login')
+def sobre_nos(request):
+    """
+    Renderiza a página 'Sobre Nós'.
+    """
+    return render(request, 'avaliacoes/sobre_nos.html')
+
+@login_required(login_url='login')
+def comparacao_disciplina(request):
+    """
+    Renderiza a página de comparação.
+    Busca uma disciplina e calcula as médias de categoria para 
+    cada professor que a ministra.
+    """
+    
+    query_disciplina = request.GET.get('q_disciplina', '').strip()
+    context = {
+        'query_disciplina': query_disciplina,
+        'resultados': [],
+        'materia_encontrada': None
+    }
+
+    if len(query_disciplina) > 0:
+        # 1. Encontra a matéria (disciplina)
+        materia = Materia.objects.filter(nome__icontains=query_disciplina).first()
+        
+        if materia:
+            context['materia_encontrada'] = materia
+            
+            # 2. Encontra todos os 'DisciplinaPessoa' (professores) para essa matéria
+            #    e usa annotate para calcular as médias de cada categoria
+            resultados = DisciplinaPessoa.objects.filter(
+                disciplina=materia
+            ).select_related(
+                'pessoa', 'pessoa__professor', 'disciplina'
+            ).annotate(
+                # Média de Didática
+                media_didatica=Avg(
+                    'avaliacoes__categorias_avaliacao__nota',
+                    filter=Q(avaliacoes__categorias_avaliacao__categoria__nome_categoria='Didática')
+                ),
+                # Média de Dificuldade
+                media_dificuldade=Avg(
+                    'avaliacoes__categorias_avaliacao__nota',
+                    filter=Q(avaliacoes__categorias_avaliacao__categoria__nome_categoria='Dificuldade')
+                ),
+                # Média de Relacionamento
+                media_relacionamento=Avg(
+                    'avaliacoes__categorias_avaliacao__nota',
+                    filter=Q(avaliacoes__categorias_avaliacao__categoria__nome_categoria='Relacionamento')
+                ),
+                # Média de Pontualidade
+                media_pontualidade=Avg(
+                    'avaliacoes__categorias_avaliacao__nota',
+                    filter=Q(avaliacoes__categorias_avaliacao__categoria__nome_categoria='Pontualidade')
+                )
+            ).filter(
+                # Garante que só apareçam professores
+                pessoa__user_type='professor' 
+            ).order_by('pessoa__first_name') # Ordena por nome
+            
+            context['resultados'] = resultados
+        
+        else:
+            if query_disciplina:
+                messages.warning(request, f"Nenhuma disciplina encontrada com o termo '{query_disciplina}'.")
+
+    return render(request, 'avaliacoes/comparacao.html', context)
