@@ -24,6 +24,7 @@ from django.core.exceptions import ValidationError
 from django.views.decorators.http import require_POST
 from django.utils import timezone
 from django.db import IntegrityError # Import adicionado
+from .models import MensagemContato # Importe o modelo novo
 
 
 from unidecode import unidecode
@@ -805,3 +806,31 @@ def comparacao_disciplina(request):
                 messages.warning(request, f"Nenhuma disciplina encontrada com o termo '{query_disciplina}'.")
 
     return render(request, 'avaliacoes/comparacao.html', context)
+
+def contato(request):
+    # 1. LÓGICA DE ADMINISTRADOR: Vê a lista de mensagens
+    if request.user.is_authenticated and hasattr(request.user, 'user_type') and request.user.user_type == 'admin':
+        # Busca todas as mensagens, da mais recente para a mais antiga
+        mensagens = MensagemContato.objects.all().order_by('-data_envio')
+        return render(request, 'avaliacoes/admin_mensagens.html', {'mensagens': mensagens})
+
+    # 2. LÓGICA DE USUÁRIO COMUM (Ou anônimo): Vê o formulário
+    if request.method == 'POST':
+        nome = request.POST.get('nome')
+        email = request.POST.get('email')
+        assunto = request.POST.get('assunto')
+        mensagem = request.POST.get('mensagem')
+
+        # Salva no banco de dados
+        nova_mensagem = MensagemContato(
+            nome=nome,
+            email=email,
+            assunto=assunto,
+            mensagem=mensagem
+        )
+        nova_mensagem.save()
+        
+        messages.success(request, 'Sua mensagem foi enviada com sucesso! Em breve entraremos em contato.')
+        return redirect('contato') # Recarrega a página limpa
+
+    return render(request, 'avaliacoes/contato.html')

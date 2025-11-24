@@ -128,3 +128,16 @@ class MediaUniversidade(models.Model):
 
     def __str__(self):
         return "Média Geral da Universidade"
+
+# No final do arquivo models.py
+
+class MensagemContato(models.Model):
+    nome = models.CharField(max_length=100)
+    email = models.EmailField()
+    assunto = models.CharField(max_length=150)
+    mensagem = models.TextField()
+    data_envio = models.DateTimeField(auto_now_add=True)
+    lida = models.BooleanField(default=False) # Para o admin marcar se já leu
+
+    def __str__(self):
+        return f"{self.assunto} - {self.nome}"

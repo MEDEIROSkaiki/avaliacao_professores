@@ -43,6 +43,8 @@ urlpatterns = [
     # ============================
     
     path('sobre-nos/', views.sobre_nos, name='sobre_nos'),
+
+    path('contato/', views.contato, name='contato')
     
 ]
 
