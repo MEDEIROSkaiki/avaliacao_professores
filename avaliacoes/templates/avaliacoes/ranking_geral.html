@@ -4,12 +4,10 @@
 
 <style>
     /* ==============================================
-  CSS PARA O RANKING (ADMIN E ALUNO)
-  ==============================================
-  */
+       CSS PARA O RANKING (ADMIN E ALUNO)
+       ============================================== */
 
     .ranking-wrapper {
-        /* Usa o mesmo layout do admin, mas sem o painel lateral */
         width: 90%;
         max-width: 1200px;
         margin: 40px auto;
@@ -33,17 +31,12 @@
     }
 
     /* ---------------------------------
-  VISUALIZAÇÃO DO ALUNO (CARDS)
-  ---------------------------------
-  */
+       VISUALIZAÇÃO DO ALUNO (CARDS)
+       --------------------------------- */
     .student-ranking-container {
         display: flex;
-        /* A CORREÇÃO PRINCIPAL ESTÁ AQUI: 
-      flex-wrap: wrap; garante que os cards quebrem a linha 
-      em telas menores ou se forem muitos.
-    */
         flex-wrap: wrap;
-        justify-content: center;
+        justify-content: center; /* Centraliza os cards na tela */
         gap: 25px;
         padding: 0;
     }
@@ -55,17 +48,11 @@
         text-align: center;
         box-shadow: 0 4px 15px rgba(0, 0, 0, 0.07);
         border: 1px solid var(--painel-central);
-
-        /* --- MUDANÇAS AQUI --- */
-        /* Em vez de 'width: 280px;', usamos flexbox: */
+        
         flex: 1;
-        /* Faz o card ser flexível (crescer/diminuir) */
-        max-width: 215px;
-        /* Largura MÁXIMA (5 cabem na tela de 1200px) */
-        min-width: 200px;
-        /* Largura MÍNIMA antes de quebrar a linha */
-        /* --- FIM DA MUDANÇA --- */
-
+        max-width: 250px; /* Ajustei levemente para ficarem mais robustos sendo apenas 3 */
+        min-width: 220px;
+        
         display: flex;
         flex-direction: column;
         align-items: center;
@@ -75,22 +62,6 @@
     .student-rank-card:hover {
         transform: translateY(-5px);
         box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
-    }
-
-    /* O NÚMERO DO RANKING (1, 2, 3...) */
-    .rank-number {
-        font-size: 3.5rem;
-        font-weight: 700;
-        color: var(--verde);
-        line-height: 1;
-    }
-
-    /* O '°' (símbolo de ordinal) */
-    .rank-number sup {
-        font-size: 1.5rem;
-        font-weight: 600;
-        top: -1.2em;
-        /* Ajusta a altura do símbolo */
     }
 
     .card-foto-rank {
@@ -127,13 +98,10 @@
         margin-bottom: 20px;
         display: block;
         min-height: 2.5em;
-        /* Garante altura mesmo se o nome for curto */
     }
 
-    /* Botão (reaproveita a classe .btn de base.html) */
     .btn-ver-perfil {
         margin-top: auto;
-        /* Empurra o botão para o fim do card */
         padding: 12px 20px;
         border: none;
         border-radius: 8px;
@@ -153,11 +121,9 @@
     }
 
     /* ---------------------------------
-  VISUALIZAÇÃO DO ADMIN (TABELA)
-  ---------------------------------
-  */
+       VISUALIZAÇÃO DO ADMIN (TABELA)
+       --------------------------------- */
     .admin-ranking-panel {
-        /* Reutiliza o estilo do painel de admin */
         flex-basis: 100%;
         max-width: 1000px;
         background-color: #fff;
@@ -165,7 +131,6 @@
         padding: 30px;
         box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
         margin: 0 auto;
-        /* Centraliza o painel */
     }
 
     .admin-ranking-table {
@@ -183,7 +148,6 @@
 
     .admin-ranking-table th {
         background-color: #f8f9fa;
-        /* Um cinza bem claro */
         color: var(--azul-marinho);
         font-size: 0.9rem;
         text-transform: uppercase;
@@ -216,12 +180,8 @@
         font-weight: 700;
         color: var(--verde);
         font-size: 1.1rem;
-
-        /* --- ADICIONE ESSAS DUAS LINHAS --- */
         white-space: nowrap;
-        /* Impede a quebra de linha */
         text-align: center;
-        /* Centraliza o texto (bônus) */
     }
 </style>
 
@@ -231,7 +191,7 @@
     <div class="admin-ranking-panel">
         <div class="ranking-header">
             <h1>Ranking de Avaliações (Admin)</h1>
-            <h2>Top 10 melhores avaliações (por disciplina/professor)</h2>
+            <h2>Top 10 melhores avaliações</h2>
         </div>
 
         <table class="admin-ranking-table">
@@ -264,13 +224,14 @@
 
     {% else %}
     <div class="ranking-header">
-        <h1>Melhores Avaliados</h1>
-        <h2>O Top 5 da universidade, segundo os alunos</h2>
+        <h1>Professores em Destaque</h1>
+        <h2>Conheça os mais bem avaliados da universidade</h2>
     </div>
 
     <div class="student-ranking-container">
-        {% for dp in ranking_disciplinas %}
+        {% for dp in ranking_disciplinas|slice:":3" %}
         <div class="student-rank-card">
+            
             <div class="card-foto-rank">
                 {% if dp.pessoa.professor.foto %}
                 <img src="{{ dp.pessoa.professor.foto.url }}" alt="Foto de {{ dp.pessoa.get_full_name }}">
@@ -287,8 +248,8 @@
             </a>
         </div>
         {% empty %}
-        <p style="color: var(--verde-escuro-letras); font-size: 1.1rem;">
-            Ainda não há avaliações suficientes para gerar um ranking.
+        <p style="color: var(--verde-escuro-letras); font-size: 1.1rem; width: 100%; text-align: center;">
+            Ainda não há avaliações suficientes para gerar os destaques.
         </p>
         {% endfor %}
     </div>
