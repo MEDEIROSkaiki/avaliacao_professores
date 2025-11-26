@@ -27,6 +27,9 @@ from django.db import IntegrityError # Import adicionado
 from .models import MensagemContato # Importe o modelo novo
 from django.contrib import messages
 from django.shortcuts import render, redirect
+from django.contrib.auth.forms import PasswordResetForm
+from django.core.mail import send_mail
+from django.utils.crypto import get_random_string
 
 
 from unidecode import unidecode
@@ -294,15 +297,13 @@ def adicionar_usuario(request):
         cpf = request.POST.get('cpf')
         data_nascimento_str = request.POST.get('nascimento')
         imagem_perfil = request.FILES.get('imagem_perfil')
-        senha = 'mudaragora' 
         
-        # NOVO: Captura do ID da matéria
         materia_id = request.POST.get('materia_disciplina')
 
-        # --- 2. BLOCO DE VALIDAÇÃO (AJUSTADO) ---
+        # --- 2. BLOCO DE VALIDAÇÃO ---
         if not tipo:
             messages.error(request, "O campo 'Tipo de Usuário' é obrigatório.")
-            return redirect('adicionar_usuario') # NOVO: Redireciona em vez de renderizar
+            return redirect('adicionar_usuario')
         if not nome:
             messages.error(request, "O campo 'Nome Completo' é obrigatório.")
             return redirect('adicionar_usuario')
@@ -320,7 +321,6 @@ def adicionar_usuario(request):
             messages.error(request, "Email já cadastrado. Por favor, utilize outro email.")
             return redirect('adicionar_usuario')
 
-        # 2b. Validação do CPF (Formato e Unicidade)
         if not cpf or not cpf.isdigit() or len(cpf) != 11:
             messages.error(request, "CPF inválido. Deve conter exatamente 11 dígitos numéricos.")
             return redirect('adicionar_usuario')
@@ -340,7 +340,6 @@ def adicionar_usuario(request):
             messages.error(request, "Data de Nascimento é um campo obrigatório.")
             return redirect('adicionar_usuario')
             
-        # NOVO: Validação de Matéria (apenas se for professor)
         materia_obj = None
         if tipo == 'professor':
             if not materia_id:
@@ -359,10 +358,14 @@ def adicionar_usuario(request):
         last_name = ' '.join(nome_completo_lista[1:]) if len(nome_completo_lista) > 1 else ''
 
         try:
+            # === CORREÇÃO AQUI ===
+            # Gera uma string aleatória de 12 caracteres para usar como senha
+            senha_temporaria = get_random_string(12) 
+
             novo_user = CustomUser.objects.create_user(
                 username=email, 
                 email=email,
-                password=senha,
+                password=senha_temporaria, # Usa a senha aleatória
                 user_type=tipo, 
                 cpf=cpf,
                 data_nascimento=data_nascimento_obj,
@@ -370,6 +373,30 @@ def adicionar_usuario(request):
                 first_name=first_name,
                 last_name=last_name
             )
+            
+            # --- DEBUG E ENVIO DE EMAIL ---
+            print(f"\n--- INÍCIO DO PROCESSO DE EMAIL ---")
+            print(f"DEBUG: Usuário criado: {novo_user.email}")
+            
+            reset_form = PasswordResetForm({'email': email})
+            
+            if reset_form.is_valid():
+                try:
+                    reset_form.save(
+                        request=request,
+                        use_https=request.is_secure(),
+                        subject_template_name='avaliacoes/password_reset_subject.txt',
+                        email_template_name='avaliacoes/password_reset_email.html',
+                    )
+                    print("SUCESSO: Email de redefinição enviado (verifique o terminal).")
+                except Exception as e_save:
+                     print(f"ERRO: Falha ao salvar/enviar form de reset: {e_save}")
+            else:
+                print(f"ERRO: Formulário de reset inválido: {reset_form.errors}")
+            
+            print(f"--- FIM DO PROCESSO DE EMAIL ---\n")
+            # ------------------------------
+
         except Exception as e:
             messages.error(request, f"Erro interno ao criar o usuário base: {e}")
             return redirect('adicionar_usuario')
@@ -380,27 +407,25 @@ def adicionar_usuario(request):
                     user=novo_user,
                     foto=imagem_perfil
                 )
-                # NOVO: Cria o link entre o professor (pessoa) e a disciplina
                 DisciplinaPessoa.objects.create(
                     disciplina=materia_obj,
                     pessoa=novo_user
-                    # status='ativo' será pego do default do model
                 )
-                messages.success(request, f"Professor {nome} cadastrado com sucesso!")
+                messages.success(request, f"Professor {nome} cadastrado! Um link para criar a senha foi enviado.")
                 return redirect('lista_professores') 
 
             elif tipo == 'aluno':
                 Aluno.objects.create(
                     user=novo_user
                 )
-                messages.success(request, f"Aluno {nome} cadastrado com sucesso!")
+                messages.success(request, f"Aluno {nome} cadastrado! Um link para criar a senha foi enviado.")
                 return redirect('adicionar_usuario') 
             
             elif tipo == 'administrador':
                 novo_user.is_staff = True
                 novo_user.is_superuser = True 
                 novo_user.save()
-                messages.success(request, f"Administrador {nome} cadastrado com sucesso!")
+                messages.success(request, f"Administrador {nome} cadastrado! Um link para criar a senha foi enviado.")
                 return redirect('adicionar_usuario')
 
         except Exception as e:
@@ -408,8 +433,7 @@ def adicionar_usuario(request):
             messages.error(request, f"Erro interno ao salvar o perfil do usuário: {e}")
             return redirect('adicionar_usuario') 
 
-    # --- Se for um GET (Carregamento da página) ---
-    # NOVO: Buscar todas as matérias para o dropdown
+    # --- Se for um GET ---
     materias = Materia.objects.all().order_by('nome')
     context = {
         'materias': materias
