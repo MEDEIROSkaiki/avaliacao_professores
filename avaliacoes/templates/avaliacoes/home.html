@@ -5,21 +5,15 @@
 
     <div class="search-card">
         <h2>Olá, {{ request.user.first_name|default:request.user.username }}! <br> AVALIE OU PESQUISE</h2>
-        
+
         <form action="{% url 'lista_professores' %}" method="get">
-            
-            <input type="text" name="q_professor" 
-                   id="search-professor" 
-                   list="professor-sugestoes" 
-                   placeholder="Pesquisar por nome do professor(a)..." 
-                   autocomplete="off">
+
+            <input type="text" name="q_professor" id="search-professor" list="professor-sugestoes"
+                placeholder="Pesquisar por nome do professor(a)..." autocomplete="off">
             <datalist id="professor-sugestoes"></datalist>
 
-            <input type="text" name="q_disciplina" 
-                   id="search-disciplina" 
-                   list="disciplina-sugestoes" 
-                   placeholder="Pesquisar por disciplina..." 
-                   autocomplete="off">
+            <input type="text" name="q_disciplina" id="search-disciplina" list="disciplina-sugestoes"
+                placeholder="Pesquisar por disciplina..." autocomplete="off">
             <datalist id="disciplina-sugestoes"></datalist>
 
             <button type="submit">Pesquisar</button>
@@ -31,7 +25,7 @@
         <div class="average-text">
             <h3>Avaliação Geral da faculdade</h3>
         </div>
-        
+
         <div class="average-score" style="position: relative;">
             <div class="donut-chart" style="
                 width: 250px;
@@ -41,7 +35,7 @@
                 display: flex;
                 align-items: center;
                 justify-content: center;">
-                
+
                 <div style="
                     width: 170px;
                     height: 170px;
@@ -50,23 +44,30 @@
                     text-align: center;
                     padding-top: 15px;
                     box-sizing: border-box;">
-                    
-                    <strong style="font-size: 3.5rem; color: var(--verde);">{{ media_geral_faculdade|floatformat:2 }}</strong>
-                    <span style="font-size: 1.5rem; color: var(--cinza-escuro-letras); display: block; margin-top: -5px;">Média</span>
+
+                    <strong style="font-size: 3.5rem; color: var(--verde);">{{ media_geral_faculdade }}</strong>
+                    <span
+                        style="font-size: 1.5rem; color: var(--cinza-escuro-letras); display: block; margin-top: -5px;">Média</span>
                 </div>
             </div>
         </div>
     </div>
 
     <div class="bottom-cards-row">
-        <a href="{% url 'ranking_geral' %}" class="mini-card" style="text-decoration: none;">
+
+        <a href="{% url 'ranking_geral' %}" class="mini-card"
+            style="text-decoration: none; {% if not request.user.is_staff and request.user.user_type != 'admin' %} flex: 1.5; {% endif %}">
             <i class="fa-solid fa-trophy"></i>
             <span>Ranking Geral</span>
         </a>
+
+        {% if request.user.is_staff or request.user.user_type == 'admin' %}
         <a href="/comparacao" class="mini-card" style="text-decoration: none;">
             <i class="fa-solid fa-balance-scale"></i>
             <span>Comparação</span>
         </a>
+        {% endif %}
+
         <div class="mini-card">
             <small>Avaliações Realizadas</small>
             <strong>{{ total_avaliacoes }}</strong>
@@ -76,78 +77,78 @@
 </main>
 
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    
-    // --- FUNÇÕES AUXILIARES ---
-    
-    // Função para buscar sugestões na API
-    let debounceTimer;
+    document.addEventListener('DOMContentLoaded', function () {
 
-    async function getSuggestions(url, term) {
-        // 1. Limpa o timer anterior para 'resetar' o atraso a cada nova chamada
-        clearTimeout(debounceTimer);
+        // --- FUNÇÕES AUXILIARES ---
 
-        // Evita chamadas de API desnecessárias
+        // Função para buscar sugestões na API
+        let debounceTimer;
+
+        async function getSuggestions(url, term) {
+            // 1. Limpa o timer anterior para 'resetar' o atraso a cada nova chamada
+            clearTimeout(debounceTimer);
+
+            // Evita chamadas de API desnecessárias
 
 
-        // Retorna uma Promise para lidar com o atraso assíncrono
-        return new Promise((resolve, reject) => {
-            // 2. Define o novo timer
-            debounceTimer = setTimeout(async () => {
-                try {
-                    // Lógica de fetch real (só será executada após 300ms de inatividade)
-                    const response = await fetch(`${url}?term=${encodeURIComponent(term)}`);
+            // Retorna uma Promise para lidar com o atraso assíncrono
+            return new Promise((resolve, reject) => {
+                // 2. Define o novo timer
+                debounceTimer = setTimeout(async () => {
+                    try {
+                        // Lógica de fetch real (só será executada após 300ms de inatividade)
+                        const response = await fetch(`${url}?term=${encodeURIComponent(term)}`);
 
-                    if (!response.ok) {
-                        resolve([]); // Resolve com array vazio em caso de erro de resposta HTTP
-                        return;
+                        if (!response.ok) {
+                            resolve([]); // Resolve com array vazio em caso de erro de resposta HTTP
+                            return;
+                        }
+
+                        const data = await response.json();
+
+                        // 3. Resolve a Promise com os dados
+                        resolve(data.sugestoes || []);
+                    } catch (error) {
+                        console.error('Erro ao buscar sugestões:', error);
+                        // 3. Resolve a Promise com array vazio em caso de erro na requisição
+                        resolve([]);
                     }
+                }, 300); // <-- O delay de 300 milissegundos
+            });
+        }
 
-                    const data = await response.json();
-                    
-                    // 3. Resolve a Promise com os dados
-                    resolve(data.sugestoes || []);
-                } catch (error) {
-                    console.error('Erro ao buscar sugestões:', error);
-                    // 3. Resolve a Promise com array vazio em caso de erro na requisição
-                    resolve([]); 
-                }
-            }, 300); // <-- O delay de 300 milissegundos
+
+        // Função para atualizar o <datalist>
+        function updateDatalist(datalistElement, suggestions) {
+            datalistElement.innerHTML = ''; // Limpa sugestões antigas
+            suggestions.forEach(item => {
+                const option = document.createElement('option');
+                option.value = item;
+                datalistElement.appendChild(option);
+            });
+        }
+
+        // --- PROFESSOR AUTOCOMPLETE ---
+        const profInput = document.getElementById('search-professor');
+        const profDatalist = document.getElementById('professor-sugestoes');
+
+        profInput.addEventListener('input', async function () {
+            const term = this.value;
+            const suggestions = await getSuggestions("{% url 'sugestoes_professores_api' %}", term);
+            updateDatalist(profDatalist, suggestions);
         });
-    }
 
+        // --- DISCIPLINA AUTOCOMPLETE ---
+        const discInput = document.getElementById('search-disciplina');
+        const discDatalist = document.getElementById('disciplina-sugestoes');
 
-    // Função para atualizar o <datalist>
-    function updateDatalist(datalistElement, suggestions) {
-        datalistElement.innerHTML = ''; // Limpa sugestões antigas
-        suggestions.forEach(item => {
-            const option = document.createElement('option');
-            option.value = item;
-            datalistElement.appendChild(option);
+        discInput.addEventListener('input', async function () {
+            const term = this.value;
+            const suggestions = await getSuggestions("{% url 'sugestoes_disciplinas_api' %}", term);
+            updateDatalist(discDatalist, suggestions);
         });
-    }
 
-    // --- PROFESSOR AUTOCOMPLETE ---
-    const profInput = document.getElementById('search-professor');
-    const profDatalist = document.getElementById('professor-sugestoes');
-    
-    profInput.addEventListener('input', async function() {
-        const term = this.value;
-        const suggestions = await getSuggestions("{% url 'sugestoes_professores_api' %}", term);
-        updateDatalist(profDatalist, suggestions);
     });
-
-    // --- DISCIPLINA AUTOCOMPLETE ---
-    const discInput = document.getElementById('search-disciplina');
-    const discDatalist = document.getElementById('disciplina-sugestoes');
-
-    discInput.addEventListener('input', async function() {
-        const term = this.value;
-        const suggestions = await getSuggestions("{% url 'sugestoes_disciplinas_api' %}", term);
-        updateDatalist(discDatalist, suggestions);
-    });
-
-});
 </script>
 
 {% endblock content %}

@@ -3,9 +3,8 @@
 {% block content %}
 
 <style>
-  /* CSS específico para a página de Comparação */
+  /* CSS mantido igual ao original */
   .comparacao-wrapper {
-    /* Usa o mesmo layout do admin, mas sem o painel lateral */
     width: 90%;
     max-width: 1200px;
     margin: 40px auto;
@@ -65,14 +64,12 @@
   /* Grid de Resultados */
   .comparacao-resultados {
     display: grid;
-    /* Cria 3 colunas, mas se ajusta para menos */
     grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
     gap: 30px;
   }
 
-  /* Mensagem de "Vazio" */
   .comparacao-empty {
-    grid-column: 1 / -1; /* Ocupa todas as colunas */
+    grid-column: 1 / -1; 
     text-align: center;
     padding: 50px 20px;
     background-color: #fff;
@@ -83,7 +80,6 @@
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
   }
 
-  /* Card individual do professor */
   .comparacao-card {
     background-color: #fff;
     border-radius: 12px;
@@ -106,7 +102,6 @@
     justify-content: center;
     color: var(--azul-acinzentado);
     font-size: 4rem;
-    /* Borda verde igual ao mockup */
     border: 5px solid var(--verde); 
   }
 
@@ -131,7 +126,6 @@
     display: block;
   }
 
-  /* Lista de Médias */
   .card-metricas {
     list-style: none;
     padding: 0;
@@ -163,9 +157,8 @@
     font-weight: 700;
   }
 
-  /* Botão (reaproveita a classe .btn de base.html) */
   .btn-ver-perfil {
-    margin-top: auto; /* Empurra o botão para o fim do card */
+    margin-top: auto;
     padding: 14px 25px;
     border: none;
     border-radius: 8px;
@@ -192,8 +185,18 @@
     
     <form method="GET" action="{% url 'comparacao_disciplina' %}" class="comparacao-search">
       <i class="fa-solid fa-search"></i>
-      <input type="text" name="q_disciplina" placeholder="Pesquisar pelo nome da matéria..." value="{{ query_disciplina|default:'' }}">
-      </form>
+      
+      <input type="text" 
+             name="q_disciplina" 
+             id="search-disciplina"
+             list="disciplina-sugestoes"
+             placeholder="Pesquisar pelo nome da matéria..." 
+             value="{{ query_disciplina|default:'' }}"
+             autocomplete="off">
+      
+      <datalist id="disciplina-sugestoes"></datalist>
+
+    </form>
     
     {% if materia_encontrada %}
       <h2>Resultados para: <strong>{{ materia_encontrada.nome }}</strong></h2>
@@ -248,4 +251,58 @@
       {% endif %}
     {% endfor %}
     
-  </div> </div> {% endblock content %}
+  </div> 
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        
+        let debounceTimer;
+    
+        async function getSuggestions(url, term) {
+            clearTimeout(debounceTimer);
+    
+            return new Promise((resolve, reject) => {
+                debounceTimer = setTimeout(async () => {
+                    try {
+                        const response = await fetch(`${url}?term=${encodeURIComponent(term)}`);
+                        if (!response.ok) {
+                            resolve([]); 
+                            return;
+                        }
+                        const data = await response.json();
+                        resolve(data.sugestoes || []);
+                    } catch (error) {
+                        console.error('Erro ao buscar sugestões:', error);
+                        resolve([]); 
+                    }
+                }, 300); // 300ms de delay
+            });
+        }
+    
+        function updateDatalist(datalistElement, suggestions) {
+            datalistElement.innerHTML = ''; 
+            suggestions.forEach(item => {
+                const option = document.createElement('option');
+                option.value = item;
+                datalistElement.appendChild(option);
+            });
+        }
+    
+        // Configuração do input de disciplina
+        const discInput = document.getElementById('search-disciplina');
+        const discDatalist = document.getElementById('disciplina-sugestoes');
+    
+        if (discInput && discDatalist) {
+            discInput.addEventListener('input', async function() {
+                const term = this.value;
+                if (term.length > 1) { // Só busca se tiver mais de 1 letra
+                    const suggestions = await getSuggestions("{% url 'sugestoes_disciplinas_api' %}", term);
+                    updateDatalist(discDatalist, suggestions);
+                }
+            });
+        }
+    });
+</script>
+
+{% endblock content %}
