@@ -25,6 +25,8 @@ from django.views.decorators.http import require_POST
 from django.utils import timezone
 from django.db import IntegrityError # Import adicionado
 from .models import MensagemContato # Importe o modelo novo
+from django.contrib import messages
+from django.shortcuts import render, redirect
 
 
 from unidecode import unidecode
@@ -45,7 +47,7 @@ def home(request):
     media_percent = (media_geral / 10) * 100 if media_geral > 0 else 0
 
     context = {
-        'media_geral_faculdade': media_geral,
+        'media_geral_faculdade': round(media_geral, 1),
         'media_percent_faculdade': media_percent, # <-- Variável para o gráfico
         'total_avaliacoes': total_avaliacoes,
         # (Não precisamos mais do 'nome_aluno', usamos request.user.first_name no template)
@@ -752,6 +754,9 @@ def comparacao_disciplina(request):
     Busca uma disciplina e calcula as médias de categoria para 
     cada professor que a ministra.
     """
+    if not request.user.is_staff and request.user.user_type != 'admin':
+        messages.error(request, "Acesso não autorizado. Apenas administradores podem acessar a comparação.")
+        return redirect('home')
     
     query_disciplina = request.GET.get('q_disciplina', '').strip()
     context = {
