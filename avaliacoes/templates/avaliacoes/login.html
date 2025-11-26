@@ -28,7 +28,7 @@
         /* Este gradiente vai do seu azul-acinzentado escuro (topo) 
           para o azul-acinzentado claro (baixo) 
         */
-        background: linear-gradient(to bottom, var(--verde-escuro-letras), var(--azul-acinzentado));
+        background: linear-gradient(180deg, #8BAFC1 0%, #C6D2D9 100%);
         
         display: flex;
         align-items: center;
@@ -50,6 +50,9 @@
         .login-branding-art {
             width: 100%;
             opacity: 0.8;
+            transform: scale(1.3);
+            transform-origin: center right;
+            margin-left: 60px;
         }
         .login-logo-container {
             margin-bottom: 30px;
@@ -126,7 +129,7 @@
         <div class="login-form">
             
             <div class="login-logo-container">
-                <img src="{% static 'images/logo.png' %}" alt="EduAvalia Logo">
+                <img src="{% static 'images/EduAvalia.png' %}" alt="EduAvalia Logo">
             </div>
 
             <form action="{% url 'login' %}" method="POST">
@@ -155,7 +158,7 @@
         </div>
 
         <div class="login-branding">
-            <img src="{% static 'images/login-art.png' %}" alt="Arte de login" class="login-branding-art">
+            <img src="{% static 'images/rede_grafica.png' %}" alt="Arte de login" class="login-branding-art">
         </div>
 
     </div>
