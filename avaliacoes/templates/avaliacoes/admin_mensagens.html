@@ -1,0 +1,111 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+
+<style>
+    .admin-msg-container {
+        width: 90%;
+        max-width: 1000px;
+        margin: 40px auto;
+        flex-grow: 1;
+    }
+
+    .admin-msg-header {
+        margin-bottom: 30px;
+        text-align: center;
+    }
+    .admin-msg-header h1 {
+        color: var(--azul-marinho);
+        font-weight: 700;
+    }
+
+    /* Estilo dos Cards de Mensagem */
+    .msg-card {
+        background: #fff;
+        border-radius: 12px;
+        padding: 25px;
+        margin-bottom: 20px;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+        border-left: 5px solid var(--azul-marinho); /* Detalhe lateral */
+        transition: transform 0.2s;
+    }
+    
+    .msg-card:hover {
+        transform: translateY(-2px);
+    }
+
+    .msg-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 15px;
+        border-bottom: 1px solid var(--painel-central);
+        padding-bottom: 10px;
+    }
+
+    .msg-info h3 {
+        margin: 0;
+        color: var(--azul-marinho);
+        font-size: 1.2rem;
+    }
+    .msg-info span {
+        font-size: 0.9rem;
+        color: var(--verde-escuro-letras);
+        display: block;
+        margin-top: 4px;
+    }
+
+    .msg-date {
+        font-size: 0.85rem;
+        color: #a0a0a0;
+        white-space: nowrap;
+    }
+
+    .msg-body {
+        color: #555;
+        line-height: 1.6;
+        font-size: 1rem;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 50px;
+        color: var(--verde-escuro-letras);
+        background: #fff;
+        border-radius: 12px;
+    }
+</style>
+
+<div class="admin-msg-container">
+    <div class="admin-msg-header">
+        <h1>Mensagens Recebidas</h1>
+        <p>Área restrita administrativa</p>
+    </div>
+
+    {% for msg in mensagens %}
+        <div class="msg-card">
+            <div class="msg-header">
+                <div class="msg-info">
+                    <h3>{{ msg.assunto }}</h3>
+                    <span><strong>De:</strong> {{ msg.nome }} ({{ msg.email }})</span>
+                </div>
+                <div class="msg-date">
+                    <i class="fa-regular fa-clock"></i> {{ msg.data_envio|date:"d/m/Y H:i" }}
+                </div>
+            </div>
+            <div class="msg-body">
+                {{ msg.mensagem|linebreaks }}
+            </div>
+        </div>
+    {% empty %}
+        <div class="empty-state">
+            <i class="fa-regular fa-envelope-open" style="font-size: 3rem; margin-bottom: 20px; color: var(--azul-acinzentado);"></i>
+            <h3>Nenhuma mensagem encontrada.</h3>
+            <p>As mensagens enviadas pelo formulário de contato aparecerão aqui.</p>
+        </div>
+    {% endfor %}
+
+</div>
+
+{% endblock content %}

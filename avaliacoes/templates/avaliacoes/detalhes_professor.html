@@ -256,105 +256,159 @@
       <div class="unified-card">
         
         <div class="disciplina-select-group">
-          <label for="main-disciplina-select">Selecione uma disciplina para ver detalhes e avaliar:</label>
+          <label for="main-disciplina-select">Selecione uma disciplina:</label>
           <select id="main-disciplina-select">
-            <option value="all" selected>Ver todas as disciplinas (Média Geral)</option>
+            <option value="all" selected>Ver todas as disciplinas</option>
             {% for dp in disciplinas_professor %}
               <option value="{{ dp.pk }}">{{ dp.disciplina.nome }}</option>
             {% endfor %}
           </select>
         </div>
 
-        <div class="chart-container">
-          <canvas id="boxplot"></canvas>
-        </div>
+        {% if request.user.user_type == 'admin' %}
+            <div class="chart-container">
+                <canvas id="boxplot"></canvas>
+            </div>
+        {% endif %}
 
-        <form id="rating-form">
-          {% csrf_token %}
-          <h3>Avaliar a disciplina selecionada</h3>
-          <div class="rating-inputs">
-            <div class="rating-group rg-didatica">
-              <label for="nota-didatica">Didática</label>
-              <input type="number" id="nota-didatica" name="didatica" min="0" max="10" step="0.5" placeholder="Nota" required>
+        {% if request.user.user_type == 'aluno' %}
+            <form id="rating-form">
+            {% csrf_token %}
+            <h3>Avaliar a disciplina selecionada</h3>
+            <div class="rating-inputs">
+                <div class="rating-group rg-didatica">
+                <label for="nota-didatica">Didática</label>
+                <input type="number" id="nota-didatica" name="didatica" min="0" max="10" step="0.5" placeholder="Nota" required>
+                </div>
+                <div class="rating-group rg-dificuldade">
+                <label for="nota-dificuldade">Dificuldade</label>
+                <input type="number" id="nota-dificuldade" name="dificuldade" min="0" max="10" step="0.5" placeholder="Nota" required>
+                </div>
+                <div class="rating-group rg-relacionamento">
+                <label for="nota-relacionamento">Relacionamento</label>
+                <input type="number" id="nota-relacionamento" name="relacionamento" min="0" max="10" step="0.5" placeholder="Nota" required>
+                </div>
+                <div class="rating-group rg-pontualidade">
+                <label for="nota-pontualidade">Pontualidade</label>
+                <input type="number" id="nota-pontualidade" name="pontualidade" min="0" max="10" step="0.5" placeholder="Nota" required>
+                </div>
             </div>
-            <div class="rating-group rg-dificuldade">
-              <label for="nota-dificuldade">Dificuldade</label>
-              <input type="number" id="nota-dificuldade" name="dificuldade" min="0" max="10" step="0.5" placeholder="Nota" required>
-            </div>
-            <div class="rating-group rg-relacionamento">
-              <label for="nota-relacionamento">Relacionamento</label>
-              <input type="number" id="nota-relacionamento" name="relacionamento" min="0" max="10" step="0.5" placeholder="Nota" required>
-            </div>
-            <div class="rating-group rg-pontualidade">
-              <label for="nota-pontualidade">Pontualidade</label>
-              <input type="number" id="nota-pontualidade" name="pontualidade" min="0" max="10" step="0.5" placeholder="Nota" required>
-            </div>
-          </div>
-          <button type="submit" class="btn-submit">Submeter Avaliação</button>
-        </form>
+            <button type="submit" class="btn-submit">Submeter Avaliação</button>
+            </form>
+        {% endif %}
       </div>
     </section>
   
     <section class="comment-card">
       
-      <form id="comment-form">
-        {% csrf_token %}
-        <h3>Adicione um comentário para a disciplina selecionada</h3>
-        <textarea id="comment-text" placeholder="Seja construtivo e respeitoso. Seu comentário é anônimo." required></textarea>
-        <div class="comment-submit-area">
-          <button type="submit">Publicar</button>
-        </div>
-      </form>
+      {% if request.user.user_type == 'aluno' %}
+        <form id="comment-form">
+            {% csrf_token %}
+            <h3>Adicione um comentário para a disciplina selecionada</h3>
+            <textarea id="comment-text" placeholder="Seja construtivo e respeitoso. Seu comentário é anônimo." required></textarea>
+            <div class="comment-submit-area">
+            <button type="submit">Publicar</button>
+            </div>
+        </form>
+      {% endif %}
 
-      <div class="comments-list">
-        <h3>Comentários</h3>
+      {% if request.user.user_type == 'admin' or request.user.user_type == 'professor' and request.user.id == professor.user.id %}
         
-        {% for avaliacao in comentarios %}
-          <div class="comment comment-item" data-disciplina-id="{{ avaliacao.disciplina_pessoa.pk }}">
-            <div class="timestamp">{{ avaliacao.data_avaliacao|date:"d/m/Y - H:i:s" }}</div>
-            <p>{{ avaliacao.comentario }}</p>
-          </div>
-        {% empty %}
-          <div class="comment" id="no-comments-message">
-            <p>Nenhum comentário para este professor ainda.</p>
-          </div>
-        {% endfor %}
+        <div class="comments-list">
+            <h3>Comentários Recebidos</h3>
+            
+            {% for avaliacao in comentarios %}
+            <div class="comment comment-item" data-disciplina-id="{{ avaliacao.disciplina_pessoa.pk }}">
+                <div class="timestamp">{{ avaliacao.data_avaliacao|date:"d/m/Y - H:i:s" }}</div>
+                <p>{{ avaliacao.comentario }}</p>
+            </div>
+            {% empty %}
+            <div class="comment" id="no-comments-message">
+                <p>Nenhum comentário disponível.</p>
+            </div>
+            {% endfor %}
 
-        <div class="comment" id="no-filter-results-message" style="display: none;">
-          <p>Nenhum comentário para esta disciplina específica.</p>
+            <div class="comment" id="no-filter-results-message" style="display: none;">
+            <p>Nenhum comentário para esta disciplina específica.</p>
+            </div>
         </div>
-        </div>
+
+      {% elif request.user.user_type == 'aluno' or request.user.user_type == 'professor' %}
+        <div style="margin-top: 20px; text-align: center; color: var(--verde-escuro-letras);">
+            <p><i class="fa-solid fa-lock"></i> Os comentários e médias são informações confidenciais.</p>
+         </div>
+      {% endif %}
     </section>
   </div>
 </div>
 
 <script>
-  // Pega o token CSRF globalmente para todos os fetches
   const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
-
-  // Pega os dados do gráfico do contexto do Django
-  const graficoData = JSON.parse('{{ dados_grafico_json|safe }}');
+  
+  // Só carrega os dados se o usuário for ADMIN para evitar exposição no código fonte
+  {% if request.user.user_type == 'admin' %}
+    const graficoData = JSON.parse('{{ dados_grafico_json|safe }}');
+  {% else %}
+    const graficoData = null;
+  {% endif %}
 
   document.addEventListener('DOMContentLoaded', function() {
 
-    let myChart; // Variável global para o gráfico
-    const ctx = document.getElementById('boxplot').getContext('2d');
+    let myChart = null; 
     const mainSelect = document.getElementById('main-disciplina-select');
     
-    // Pega os formulários para esconder/mostrar
+    // Pega elementos opcionais (podem não existir dependendo do usuário)
     const ratingForm = document.getElementById('rating-form');
     const commentForm = document.getElementById('comment-form');
 
-    // --- 1. FUNÇÃO PARA ATUALIZAR O GRÁFICO ---
+    // --- 1. GRÁFICO (SÓ EXECUTA SE O ELEMENTO EXISTIR) ---
+    const canvasElement = document.getElementById('boxplot');
+    
+    if (canvasElement && graficoData) {
+        const ctx = canvasElement.getContext('2d');
+        const initialData = graficoData['all'];
+
+        if (initialData) {
+            const config = {
+                type: 'boxplot',
+                data: {
+                    labels: ['Didática', 'Dificuldade', 'Relacionamento', 'Pontualidade'],
+                    datasets: [{
+                    label: 'Avaliações',
+                    data: [
+                        initialData.didatica,
+                        initialData.dificuldade,
+                        initialData.relacionamento,
+                        initialData.pontualidade
+                    ],
+                    backgroundColor: ['#d1eef4', '#d4edda', '#fff3cd', '#e2d9f3'],
+                    borderColor: ['#0b2958', '#155724', '#856404', '#381c5c'],
+                    borderWidth: 1.5,
+                    padding: 10,
+                    itemRadius: 3,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: { y: { beginAtZero: true, max: 10 } }
+                }
+            };
+            myChart = new Chart(ctx, config);
+        }
+    }
+
+    // --- 2. ATUALIZAR GRÁFICO ---
     function updateChart(disciplinaId) {
+      if (!myChart || !graficoData) return; // Se não tem gráfico, não faz nada
+
       const dataForChart = graficoData[disciplinaId];
       if (!dataForChart) {
-        console.error('Nenhum dado encontrado para a disciplina:', disciplinaId);
         myChart.data.datasets[0].data = [[], [], [], []];
         myChart.update();
         return;
       }
-
       myChart.data.datasets[0].data = [
         dataForChart.didatica,
         dataForChart.dificuldade,
@@ -364,97 +418,59 @@
       myChart.update();
     }
 
-    // --- 2. FUNÇÃO PARA MOSTRAR/ESCONDER FORMULÁRIOS ---
+    // --- 3. MOSTRAR/ESCONDER FORMULÁRIOS (SÓ SE EXISTIREM) ---
     function toggleFormsVisibility(show) {
-      ratingForm.style.display = show ? 'block' : 'none';
-      commentForm.style.display = show ? 'block' : 'none';
+      if(ratingForm) ratingForm.style.display = show ? 'block' : 'none';
+      if(commentForm) commentForm.style.display = show ? 'block' : 'none';
     }
 
-    // --- 3. NOVA FUNÇÃO PARA FILTRAR COMENTÁRIOS ---
+    // --- 4. FILTRAR COMENTÁRIOS ---
     function updateCommentVisibility(disciplinaId) {
       const allComments = document.querySelectorAll('.comment-item');
+      if (allComments.length === 0) return; // Se não tem comentários, sai
+
       const noCommentsMsg = document.getElementById('no-comments-message');
       const noFilterMsg = document.getElementById('no-filter-results-message');
       
       let commentsFound = 0;
 
-      // Loop em todos os comentários com a classe 'comment-item'
       allComments.forEach(comment => {
         const commentDisciplinaId = comment.dataset.disciplinaId;
-        
         if (disciplinaId === 'all' || commentDisciplinaId === disciplinaId) {
-          comment.style.display = 'block'; // Mostra o comentário
+          comment.style.display = 'block';
           commentsFound++;
         } else {
-          comment.style.display = 'none'; // Esconde o comentário
+          comment.style.display = 'none';
         }
       });
 
-      // --- Lógica para mostrar/esconder mensagens de "vazio" ---
       if (noCommentsMsg) noCommentsMsg.style.display = 'none';
       if (noFilterMsg) noFilterMsg.style.display = 'none';
 
       if (commentsFound === 0) {
-        if (allComments.length === 0) {
-          // Se não há NENHUM comentário no total
-          if (noCommentsMsg) noCommentsMsg.style.display = 'block';
-        } else {
-          // Se há comentários, mas o filtro não achou nada
-          if (noFilterMsg) noFilterMsg.style.display = 'block';
+        if (allComments.length === 0 && noCommentsMsg) {
+          noCommentsMsg.style.display = 'block';
+        } else if (noFilterMsg) {
+          noFilterMsg.style.display = 'block';
         }
       }
     }
 
-    // --- 4. INICIALIZAÇÃO DO GRÁFICO ---
-    const initialData = graficoData['all'];
-    if (!initialData) {
-        console.error("Erro fatal: 'graficoData['all']' não encontrado. Verifique sua views.py.");
-        return; 
-    }
-    const config = {
-      type: 'boxplot',
-      data: {
-        labels: ['Didática', 'Dificuldade', 'Relacionamento', 'Pontualidade'],
-        datasets: [{
-          label: 'Avaliações',
-          data: [
-            initialData.didatica,
-            initialData.dificuldade,
-            initialData.relacionamento,
-            initialData.pontualidade
-          ],
-          backgroundColor: ['#d1eef4', '#d4edda', '#fff3cd', '#e2d9f3'],
-          borderColor: ['#0b2958', '#155724', '#856404', '#381c5c'],
-          borderWidth: 1.5,
-          padding: 10,
-          itemRadius: 3,
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: { legend: { display: false }, title: { display: false } },
-        scales: { y: { beginAtZero: true, max: 10, ticks: { stepSize: 1 } } }
-      }
-    };
-    myChart = new Chart(ctx, config);
-
-    // --- 5. EVENT LISTENER DO DROPDOWN MESTRE ---
+    // --- 5. EVENTO SELECT ---
     mainSelect.addEventListener('change', function() {
       const selectedId = this.value;
-      
-      updateChart(selectedId); // Atualiza gráfico
+      updateChart(selectedId); 
       
       if (selectedId === 'all') {
-        toggleFormsVisibility(false); // Esconde forms
+        toggleFormsVisibility(false);
       } else {
-        toggleFormsVisibility(true); // Mostra forms
+        toggleFormsVisibility(true);
       }
       
-      updateCommentVisibility(selectedId); // ATUALIZA COMENTÁRIOS
+      updateCommentVisibility(selectedId);
     });
 
-    // --- 6. LÓGICA DO FORMULÁRIO DE AVALIAÇÃO ---
+    // --- 6. SUBMIT AVALIAÇÃO (SÓ ALUNO) ---
     if (ratingForm) {
       ratingForm.addEventListener('submit', function(event) {
         event.preventDefault();
@@ -473,11 +489,6 @@
           pontualidade: formData.get('pontualidade')
         };
 
-        if (!notas.didatica || !notas.dificuldade || !notas.relacionamento || !notas.pontualidade) {
-            alert('Por favor, preencha todas as 4 notas.');
-            return;
-        }
-
         fetch("{% url 'salvar_avaliacao_api' %}", {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
@@ -486,24 +497,19 @@
         .then(response => response.json())
         .then(data => {
           if (data.success) {
-            alert('Avaliação salva com sucesso! A página será atualizada.');
+            alert('Avaliação salva com sucesso!');
             location.reload(); 
           } else {
-            alert('Erro ao salvar avaliação: ' + data.error);
+            alert('Erro: ' + data.error);
           }
-        })
-        .catch(error => {
-          console.error('Erro no fetch:', error);
-          alert('Ocorreu um erro de rede. Tente novamente.');
         });
       });
     }
 
-    // --- 7. LÓGICA DO FORMULÁRIO DE COMENTÁRIO ---
+    // --- 7. SUBMIT COMENTÁRIO (SÓ ALUNO) ---
     if (commentForm) {
       commentForm.addEventListener('submit', function(event) {
         event.preventDefault();
-        
         const selectedDisciplinaId = mainSelect.value;
         if (selectedDisciplinaId === 'all') {
           alert('Por favor, selecione uma disciplina específica para comentar.');
@@ -515,11 +521,6 @@
           texto: document.getElementById('comment-text').value
         };
 
-        if (comentario.texto.trim() === '') {
-           alert('O comentário não pode estar vazio.');
-           return;
-        }
-
         fetch("{% url 'salvar_comentario_api' %}", {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
@@ -528,24 +529,18 @@
         .then(response => response.json())
         .then(data => {
           if (data.success) {
-            // MUDANÇA: Recarregar a página para atualizar a lista
-            alert('Comentário salvo com sucesso! A página será atualizada.');
+            alert('Comentário salvo!');
             location.reload(); 
           } else {
-            alert('Erro ao salvar comentário: ' + data.error);
+            alert('Erro: ' + data.error);
           }
-        })
-        .catch(error => {
-          console.error('Erro no fetch:', error);
-          alert('Ocorreu um erro de rede. Tente novamente.');
         });
       });
     }
 
-    // --- 8. INICIALIZAÇÃO DOS ESTADOS ---
-    toggleFormsVisibility(false); // Esconde forms no início
-    updateCommentVisibility('all'); // Filtra comentários para "todos"
-
+    // Inicialização
+    toggleFormsVisibility(false); 
+    updateCommentVisibility('all');
   });
 </script>
 
