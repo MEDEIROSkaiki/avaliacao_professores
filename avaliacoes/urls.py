@@ -54,6 +54,9 @@ urlpatterns = [
     path('reset/done/', 
          auth_views.PasswordResetCompleteView.as_view(template_name='avaliacoes/password_reset_complete.html'), 
          name='password_reset_complete'),
+
+     path('alunos/selecionar/', views.selecionar_aluno_para_editar, name='selecionar_aluno_para_editar'),
+     path('alunos/<int:aluno_id>/editar/', views.editar_aluno, name='editar_aluno'),
     
 ]
 

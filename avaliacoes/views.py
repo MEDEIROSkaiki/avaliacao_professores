@@ -30,6 +30,7 @@ from django.shortcuts import render, redirect
 from django.contrib.auth.forms import PasswordResetForm
 from django.core.mail import send_mail
 from django.utils.crypto import get_random_string
+from django.db import transaction
 
 
 from unidecode import unidecode
@@ -297,148 +298,110 @@ def adicionar_usuario(request):
         cpf = request.POST.get('cpf')
         data_nascimento_str = request.POST.get('nascimento')
         imagem_perfil = request.FILES.get('imagem_perfil')
-        
         materia_id = request.POST.get('materia_disciplina')
 
-        # --- 2. BLOCO DE VALIDAÇÃO ---
-        if not tipo:
-            messages.error(request, "O campo 'Tipo de Usuário' é obrigatório.")
-            return redirect('adicionar_usuario')
-        if not nome:
-            messages.error(request, "O campo 'Nome Completo' é obrigatório.")
-            return redirect('adicionar_usuario')
-        if not email:
-            messages.error(request, "O campo 'Email (login)' é obrigatório.")
-            return redirect('adicionar_usuario')
-            
-        try:
-            validate_email(email)
-        except ValidationError:
-            messages.error(request, "Email inválido. Por favor, insira um email válido.")
-            return redirect('adicionar_usuario') 
-        
-        if CustomUser.objects.filter(email=email).exists():
-            messages.error(request, "Email já cadastrado. Por favor, utilize outro email.")
-            return redirect('adicionar_usuario')
+        # --- 2. VALIDAÇÕES ---
+        if not all([tipo, nome, email, cpf, data_nascimento_str]):
+             messages.error(request, "Preencha todos os campos obrigatórios.")
+             return redirect('adicionar_usuario')
 
-        if not cpf or not cpf.isdigit() or len(cpf) != 11:
-            messages.error(request, "CPF inválido. Deve conter exatamente 11 dígitos numéricos.")
-            return redirect('adicionar_usuario')
-
-        if CustomUser.objects.filter(cpf=cpf).exists():
-            messages.error(request, "CPF já cadastrado. Por favor, utilize outro CPF.")
-            return redirect('adicionar_usuario')
-
-        data_nascimento_obj = None
-        if data_nascimento_str:
-            try:
-                data_nascimento_obj = datetime.strptime(data_nascimento_str, '%d/%m/%Y').date()
-            except ValueError:
-                messages.error(request, "Data de Nascimento inválida. O formato deve ser DD/MM/AAAA.")
-                return redirect('adicionar_usuario')
-        else:
-            messages.error(request, "Data de Nascimento é um campo obrigatório.")
-            return redirect('adicionar_usuario')
-            
         materia_obj = None
         if tipo == 'professor':
             if not materia_id:
-                messages.error(request, "Para cadastrar um Professor, a disciplina é obrigatória.")
+                messages.error(request, "Selecione uma disciplina para o professor.")
                 return redirect('adicionar_usuario')
             try:
                 materia_obj = Materia.objects.get(pk=materia_id)
             except Materia.DoesNotExist:
-                messages.error(request, "Disciplina selecionada inválida.")
+                messages.error(request, "Disciplina inválida.")
                 return redirect('adicionar_usuario')
 
-
-        # --- 3. PROCESSAMENTO E SALVAMENTO ---
-        nome_completo_lista = nome.split(' ')
-        first_name = nome_completo_lista[0] if nome_completo_lista else ''
-        last_name = ' '.join(nome_completo_lista[1:]) if len(nome_completo_lista) > 1 else ''
-
         try:
-            # === CORREÇÃO AQUI ===
-            # Gera uma string aleatória de 12 caracteres para usar como senha
-            senha_temporaria = get_random_string(12) 
-
-            novo_user = CustomUser.objects.create_user(
-                username=email, 
-                email=email,
-                password=senha_temporaria, # Usa a senha aleatória
-                user_type=tipo, 
-                cpf=cpf,
-                data_nascimento=data_nascimento_obj,
-                is_active=True,
-                first_name=first_name,
-                last_name=last_name
-            )
-            
-            # --- DEBUG E ENVIO DE EMAIL ---
-            print(f"\n--- INÍCIO DO PROCESSO DE EMAIL ---")
-            print(f"DEBUG: Usuário criado: {novo_user.email}")
-            
-            reset_form = PasswordResetForm({'email': email})
-            
-            if reset_form.is_valid():
-                try:
-                    reset_form.save(
-                        request=request,
-                        use_https=request.is_secure(),
-                        subject_template_name='avaliacoes/password_reset_subject.txt',
-                        email_template_name='avaliacoes/password_reset_email.html',
-                    )
-                    print("SUCESSO: Email de redefinição enviado (verifique o terminal).")
-                except Exception as e_save:
-                     print(f"ERRO: Falha ao salvar/enviar form de reset: {e_save}")
-            else:
-                print(f"ERRO: Formulário de reset inválido: {reset_form.errors}")
-            
-            print(f"--- FIM DO PROCESSO DE EMAIL ---\n")
-            # ------------------------------
-
-        except Exception as e:
-            messages.error(request, f"Erro interno ao criar o usuário base: {e}")
+            data_nascimento_obj = datetime.strptime(data_nascimento_str, '%d/%m/%Y').date()
+        except ValueError:
+            messages.error(request, "Data inválida (DD/MM/AAAA).")
             return redirect('adicionar_usuario')
 
+        if CustomUser.objects.filter(email=email).exists():
+            messages.error(request, "Email já cadastrado.")
+            return redirect('adicionar_usuario')
+        if CustomUser.objects.filter(cpf=cpf).exists():
+            messages.error(request, "CPF já cadastrado.")
+            return redirect('adicionar_usuario')
+
+        # --- 3. CRIAÇÃO NO BANCO (RÁPIDA) ---
+        novo_user = None
         try:
-            if tipo == 'professor':
-                Professor.objects.create(
-                    user=novo_user,
-                    foto=imagem_perfil
-                )
-                DisciplinaPessoa.objects.create(
-                    disciplina=materia_obj,
-                    pessoa=novo_user
-                )
-                messages.success(request, f"Professor {nome} cadastrado! Um link para criar a senha foi enviado.")
-                return redirect('lista_professores') 
+            # O atomic garante que Usuário e Perfil sejam criados juntos.
+            # Se der erro aqui, nada é salvo.
+            with transaction.atomic():
+                
+                nome_parts = nome.split(' ')
+                first_name = nome_parts[0]
+                last_name = ' '.join(nome_parts[1:]) if len(nome_parts) > 1 else ''
 
-            elif tipo == 'aluno':
-                Aluno.objects.create(
-                    user=novo_user
+                # Gera senha e cria User
+                senha_temp = get_random_string(12)
+                novo_user = CustomUser.objects.create_user(
+                    username=email,
+                    email=email,
+                    password=senha_temp,
+                    user_type=tipo,
+                    cpf=cpf,
+                    data_nascimento=data_nascimento_obj,
+                    is_active=True,
+                    first_name=first_name,
+                    last_name=last_name
                 )
-                messages.success(request, f"Aluno {nome} cadastrado! Um link para criar a senha foi enviado.")
-                return redirect('adicionar_usuario') 
+
+                # Cria Perfil
+                if tipo == 'professor':
+                    Professor.objects.create(user=novo_user, foto=imagem_perfil)
+                    DisciplinaPessoa.objects.create(disciplina=materia_obj, pessoa=novo_user)
+                elif tipo == 'aluno':
+                    Aluno.objects.create(user=novo_user)
+                elif tipo == 'administrador':
+                    novo_user.is_staff = True
+                    novo_user.is_superuser = True
+                    novo_user.save()
             
-            elif tipo == 'administrador':
-                novo_user.is_staff = True
-                novo_user.is_superuser = True 
-                novo_user.save()
-                messages.success(request, f"Administrador {nome} cadastrado! Um link para criar a senha foi enviado.")
-                return redirect('adicionar_usuario')
-
+            # --- FIM DO BLOCO ATOMIC ---
+            # O banco de dados foi salvo e liberado AQUI.
+            
         except Exception as e:
-            novo_user.delete() 
-            messages.error(request, f"Erro interno ao salvar o perfil do usuário: {e}")
-            return redirect('adicionar_usuario') 
+            # Erro de banco de dados
+            messages.error(request, f"Erro ao salvar no banco: {e}")
+            return redirect('adicionar_usuario')
 
-    # --- Se for um GET ---
+        # --- 4. ENVIO DE EMAIL (LENTO) ---
+        # Agora estamos fora da transação, então se demorar, não trava o banco.
+        try:
+            print(f"DEBUG: Enviando email para {email}")
+            reset_form = PasswordResetForm({'email': email})
+            if reset_form.is_valid():
+                reset_form.save(
+                    request=request,
+                    use_https=request.is_secure(),
+                    subject_template_name='avaliacoes/password_reset_subject.txt',
+                    email_template_name='avaliacoes/password_reset_email.html',
+                )
+        except Exception as e_mail:
+            # Se o email falhar, o usuário JÁ FOI CRIADO. 
+            # Apenas avisamos o admin, não deletamos o usuário.
+            messages.warning(request, f"Usuário criado, mas erro ao enviar email: {e_mail}")
+            return redirect('adicionar_usuario')
+
+        # Sucesso total
+        if tipo == 'professor':
+            messages.success(request, f"Professor {nome} cadastrado e e-mail enviado!")
+            return redirect('lista_professores')
+        else:
+            messages.success(request, f"{tipo.capitalize()} {nome} cadastrado e e-mail enviado!")
+            return redirect('adicionar_usuario')
+
+    # --- GET Request ---
     materias = Materia.objects.all().order_by('nome')
-    context = {
-        'materias': materias
-    }
-    return render(request, 'avaliacoes/adicionar_usuario.html', context)
+    return render(request, 'avaliacoes/adicionar_usuario.html', {'materias': materias})
             
 
 def detalhes_professor(request, professor_id):
@@ -863,3 +826,49 @@ def contato(request):
         return redirect('contato') # Recarrega a página limpa
 
     return render(request, 'avaliacoes/contato.html')
+
+@staff_member_required
+def selecionar_aluno_para_editar(request):
+    # Busca todos os alunos ordenados pelo nome do usuário
+    alunos = Aluno.objects.all().select_related('user').order_by('user__first_name')
+    return render(request, 'avaliacoes/selecionar_aluno_para_editar.html', {
+        'alunos': alunos
+    })
+
+@staff_member_required
+def editar_aluno(request, aluno_id):
+    aluno = get_object_or_404(Aluno, pk=aluno_id)
+    user = aluno.user
+
+    if request.method == 'POST':
+        # --- LÓGICA DE EXCLUSÃO ---
+        if 'submit_delete' in request.POST:
+            try:
+                nome_aluno = user.get_full_name()
+                user.delete() # Deleta o User (o Aluno some em cascata)
+                messages.success(request, f"Aluno '{nome_aluno}' excluído com sucesso.")
+                return redirect('selecionar_aluno_para_editar')
+            except Exception as e:
+                messages.error(request, f"Erro ao excluir aluno: {e}")
+                return redirect('editar_aluno', aluno_id=aluno.id)
+
+        # --- LÓGICA DE EDIÇÃO (Nome/Email) ---
+        elif 'submit_profile' in request.POST:
+            user_form = UserProfileForm(request.POST, instance=user, prefix='user')
+            
+            if user_form.is_valid():
+                user_form.save()
+                messages.success(request, 'Perfil do aluno atualizado com sucesso!')
+                return redirect('editar_aluno', aluno_id=aluno.id)
+            else:
+                messages.error(request, 'Erro ao atualizar. Verifique os campos.')
+
+    else:
+        # GET request: carrega o formulário preenchido
+        user_form = UserProfileForm(instance=user, prefix='user')
+
+    context = {
+        'aluno': aluno,
+        'user_form': user_form
+    }
+    return render(request, 'avaliacoes/editar_aluno.html', context)

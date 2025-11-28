@@ -1,0 +1,69 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<style>
+    .edit-wrapper {
+        width: 90%;
+        max-width: 800px;
+        margin: 40px auto;
+        display: flex;
+        flex-direction: column;
+        gap: 30px;
+    }
+    .card-panel {
+        background: #fff;
+        padding: 30px;
+        border-radius: 12px;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+    }
+    h2 { color: var(--azul-marinho); margin-bottom: 20px; border-bottom: 1px solid #eee; padding-bottom: 10px; }
+    
+    /* Estilo Básico de Form */
+    .form-group { margin-bottom: 15px; }
+    label { display: block; margin-bottom: 5px; font-weight: 600; color: var(--verde-escuro-letras); }
+    input[type="text"], input[type="email"] {
+        width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px;
+    }
+
+    .btn-save { background-color: var(--verde); color: white; padding: 10px 20px; border: none; border-radius: 6px; cursor: pointer; width: 100%; font-size: 1rem; margin-top: 10px;}
+    .btn-delete { background-color: #e74c3c; color: white; padding: 10px 20px; border: none; border-radius: 6px; cursor: pointer; width: 100%; font-size: 1rem; margin-top: 10px;}
+    
+    .btn-save:hover { opacity: 0.9; }
+    .btn-delete:hover { background-color: #c0392b; }
+</style>
+
+<div class="edit-wrapper">
+    <div class="card-panel">
+        <h2>Editar Aluno: {{ aluno.user.get_full_name }}</h2>
+        <form method="POST">
+            {% csrf_token %}
+            
+            <div class="form-group">
+                <label>Nome:</label>
+                {{ user_form.first_name }}
+            </div>
+            <div class="form-group">
+                <label>Sobrenome:</label>
+                {{ user_form.last_name }}
+            </div>
+            <div class="form-group">
+                <label>Email (Login):</label>
+                {{ user_form.email }}
+            </div>
+
+            <button type="submit" name="submit_profile" class="btn-save">Salvar Alterações</button>
+        </form>
+    </div>
+
+    <div class="card-panel" style="border: 1px solid #fab1a0;">
+        <h2 style="color: #c0392b; border-color: #fab1a0;">Excluir Aluno</h2>
+        <p style="color: #555; margin-bottom: 15px;">
+            Atenção: Ao excluir este aluno, o acesso dele será revogado permanentemente.
+        </p>
+        <form method="POST" onsubmit="return confirm('Tem certeza absoluta que deseja excluir este aluno?');">
+            {% csrf_token %}
+            <button type="submit" name="submit_delete" class="btn-delete">Excluir Aluno Permanentemente</button>
+        </form>
+    </div>
+</div>
+{% endblock %}
