@@ -19,6 +19,8 @@ from django.contrib.admin.views.decorators import staff_member_required
 from .forms import CustomUserCreationForm, CustomUserChangeForm
 from django.contrib import messages
 from datetime import datetime
+from django.db.models import Value, CharField
+from django.db.models.functions import Concat
 from django.core.validators import validate_email
 from django.core.exceptions import ValidationError
 from django.views.decorators.http import require_POST
@@ -80,33 +82,41 @@ def login_view(request):
 
 @login_required(login_url='login')
 def lista_professores(request):
-    # Inicia a query base de professores
+    # Inicia a query base
     professores = Professor.objects.annotate(
         media_nota=Avg('user__disciplinas_pessoa__avaliacoes__categorias_avaliacao__nota')
-    ).filter(id__isnull=False).order_by('user__first_name') # Adicionei ordenação
+    ).filter(id__isnull=False).order_by('user__first_name')
 
     # --- LÓGICA DE PESQUISA ---
-    # Pega os termos de pesquisa da URL (vindos do GET da home)
-    query_professor = request.GET.get('q_professor')
-    query_disciplina = request.GET.get('q_disciplina')
+    query_professor = request.GET.get('q_professor', '').strip()
+    query_disciplina = request.GET.get('q_disciplina', '').strip()
 
     if query_professor:
-        # Filtra por nome OU sobrenome
-        professores = professores.filter(
+        # AQUI ESTA A CORREÇÃO:
+        # Criamos um campo virtual 'nome_completo' juntando First + Espaço + Last
+        professores = professores.annotate(
+            nome_completo=Concat(
+                'user__first_name', 
+                Value(' '), 
+                'user__last_name', 
+                output_field=CharField()
+            )
+        ).filter(
+            # Agora pesquisamos no nome, no sobrenome OU na junção dos dois
             Q(user__first_name__icontains=query_professor) | 
-            Q(user__last_name__icontains=query_professor)
+            Q(user__last_name__icontains=query_professor) |
+            Q(nome_completo__icontains=query_professor)
         )
 
     if query_disciplina:
-        # Filtra pelo nome da disciplina que o professor leciona
         professores = professores.filter(
             user__disciplinas_pessoa__disciplina__nome__icontains=query_disciplina
-        ).distinct() # .distinct() evita professores duplicados se ele der 2x a mesma matéria
+        ).distinct()
 
     context = {
         'professores': professores,
-        'query_professor': query_professor, # Bônus: envia o termo de volta
-        'query_disciplina': query_disciplina # Bônus: envia o termo de volta
+        'query_professor': query_professor,
+        'query_disciplina': query_disciplina
     }
     return render(request, 'avaliacoes/lista_professores.html', context)
 
@@ -710,22 +720,30 @@ def sugestoes_professores_api(request):
 
 def sugestoes_disciplinas_api(request):
     term = request.GET.get('term', '').strip()
+    # Se o termo for vazio, retorna lista vazia
+    if not term:
+        return JsonResponse({'sugestoes': []})
+
     normalized_term = unidecode(term).lower()
     
-    
+    # Tenta filtrar primeiro pelo campo normalizado, se ele existir
     try:
+        # Se você tiver um campo customizado 'nome_normalized' no model Materia
         disciplinas = Materia.objects.filter(
             nome_normalized__icontains=normalized_term
-        ).values_list('nome', flat=True)[:10] 
+        ).values_list('nome', flat=True)[:10]
         
-    except AttributeError:
+    except FieldError: 
+        # FieldError é o erro correto do Django quando um campo não existe no Model
+        # Fallback para o campo 'nome' padrão
         disciplinas = Materia.objects.filter(
             nome__icontains=term 
         ).values_list('nome', flat=True)[:10]
     
-    sugestoes_set = set(disciplinas)
+    # Remove duplicatas e converte para lista
+    sugestoes_lista = list(set(disciplinas))
     
-    return JsonResponse({'sugestoes': list(sugestoes_set)})
+    return JsonResponse({'sugestoes': sugestoes_lista})
 
 @login_required(login_url='login')
 def sobre_nos(request):
