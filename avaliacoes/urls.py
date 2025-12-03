@@ -55,8 +55,14 @@ urlpatterns = [
          auth_views.PasswordResetCompleteView.as_view(template_name='avaliacoes/password_reset_complete.html'), 
          name='password_reset_complete'),
 
-     path('alunos/selecionar/', views.selecionar_aluno_para_editar, name='selecionar_aluno_para_editar'),
-     path('alunos/<int:aluno_id>/editar/', views.editar_aluno, name='editar_aluno'),
+    path('alunos/selecionar/', views.selecionar_aluno_para_editar, name='selecionar_aluno_para_editar'),
+    path('alunos/<int:aluno_id>/editar/', views.editar_aluno, name='editar_aluno'),
+
+    path('ajax/get_disciplinas_professor/', views.get_disciplinas_professor, name='get_disciplinas_professor'),
+    path('ajax/adicionar_disciplina_professor/', views.adicionar_disciplina_professor, name='adicionar_disciplina_professor'),
+    path('ajax/excluir_disciplina_professor/<int:id>/', views.excluir_disciplina_professor, name='excluir_disciplina_professor'),
+    path('ajax/get_disciplinas_table/', views.get_disciplinas_table, name='get_disciplinas_table'),
+    path('ajax/excluir_matricula/<int:matricula_id>/', views.excluir_matricula_aluno, name='excluir_matricula_aluno'),
     
 ]
 

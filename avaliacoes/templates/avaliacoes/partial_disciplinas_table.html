@@ -1,0 +1,16 @@
+{% for matricula in disciplinas_atribuidas %}
+    <tr>
+        <td>{{ matricula.disciplina_professor.pessoa.first_name }} {{ matricula.disciplina_professor.pessoa.last_name }}</td>
+        
+        <td>{{ matricula.disciplina_professor.disciplina.nome }}</td>
+        
+        <td>
+            <button class="btn-delete-small" data-matricula-id="{{ matricula.id }}">Excluir</button>
+        </td>
+    </tr>
+{% empty %}
+    <tr>
+        <td colspan="3">O aluno não está matriculado em nenhuma disciplina.</td>
+    </tr>
+{% endfor %}
+

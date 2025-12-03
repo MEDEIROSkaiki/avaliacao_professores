@@ -9,7 +9,7 @@ from .forms import (
 )
 from .models import (
     Avaliacao, Professor, CustomUser, Materia, DisciplinaPessoa, 
-    Aluno, Categoria, AvaliacaoCategoria
+    Aluno, Categoria, AvaliacaoCategoria,MatriculaAluno
 )
 from django.db.models import Avg, Count, Q
 import json
@@ -32,6 +32,10 @@ from django.core.mail import send_mail
 from django.utils.crypto import get_random_string
 from django.db import transaction
 
+from django.template.loader import render_to_string
+from django.views.decorators.http import require_http_methods
+
+from django.views.decorators.csrf import csrf_exempt
 
 from unidecode import unidecode
 
@@ -402,7 +406,9 @@ def adicionar_usuario(request):
     # --- GET Request ---
     materias = Materia.objects.all().order_by('nome')
     return render(request, 'avaliacoes/adicionar_usuario.html', {'materias': materias})
-            
+
+
+
 
 def detalhes_professor(request, professor_id):
     # 1. Busca o professor
@@ -417,7 +423,43 @@ def detalhes_professor(request, professor_id):
         comentario__isnull=False
     ).exclude(comentario='').order_by('-data_avaliacao') 
 
-    # 4. === NOVO: Lógica do Gráfico por Disciplina ===
+    # =======================================================
+    # NOVO: VERIFICAÇÃO DA CONDIÇÃO DE AVALIAÇÃO (pode_avaliar)
+    # =======================================================
+    pode_avaliar = False
+    disciplinas_permitidas_ids = []
+    disciplinas_avaliadas_ids = [] # <-- VARIÁVEL PARA GUARDAR OS IDS AVALIADOS
+    
+    # Verifica se o usuário está logado E se é do tipo 'aluno'
+    if request.user.is_authenticated and request.user.user_type == 'aluno':
+        try:
+            # 3a. Busca o perfil Aluno do usuário logado
+            aluno_logado = Aluno.objects.get(user=request.user)
+            
+            # 3b. OBTÉM IDS DOS VÍNCULOS QUE O ALUNO ESTÁ MATRICULADO (Permissão de Acesso)
+            disciplinas_permitidas_ids = list(MatriculaAluno.objects.filter(
+                aluno=aluno_logado,
+                disciplina_professor__pessoa=professor.user
+            ).values_list('disciplina_professor_id', flat=True)) # Pega o ID do DisciplinaPessoa
+
+            if disciplinas_permitidas_ids:
+                pode_avaliar = True
+                
+                # NOVO: OBTÉM IDS DOS VÍNCULOS QUE O ALUNO JÁ AVALIOU
+                # Filtra as Avaliacoes por aluno e pelo conjunto de disciplinas permitidas
+                # Assume que sua model Avaliacao foi corrigida para ter o campo 'aluno'
+                disciplinas_avaliadas_ids = list(Avaliacao.objects.filter(
+                    aluno=aluno_logado,
+                    disciplina_pessoa__in=disciplinas_permitidas_ids
+                ).values_list('disciplina_pessoa_id', flat=True).distinct()) # Pega o ID do DisciplinaPessoa avaliado
+                
+        except Aluno.DoesNotExist:
+            pass
+    # =======================================================
+    # FIM DA VERIFICAÇÃO
+    # =======================================================
+
+    # 4. === Lógica do Gráfico por Disciplina ===
     
     # Dicionário principal que será enviado como JSON
     dados_grafico = {}
@@ -439,7 +481,10 @@ def detalhes_professor(request, professor_id):
             'professor': professor,
             'disciplinas_professor': disciplinas_do_professor,
             'comentarios': comentarios,
-            'dados_grafico_json': json.dumps({'all': dados_all}), # Envia ao menos o 'all' vazio
+            'dados_grafico_json': json.dumps({'all': dados_all}),
+            'pode_avaliar': pode_avaliar,
+            'disciplinas_permitidas_json': json.dumps(disciplinas_permitidas_ids),
+            'disciplinas_avaliadas_json': json.dumps(disciplinas_avaliadas_ids), # <--- NOVO JSON AQUI
         }
         return render(request, 'avaliacoes/detalhes_professor.html', context)
 
@@ -477,64 +522,140 @@ def detalhes_professor(request, professor_id):
         'disciplinas_professor': disciplinas_do_professor, # Para o dropdown
         'comentarios': comentarios,
         'dados_grafico_json': json.dumps(dados_grafico, default=str), # Envia o NOVO JSON
+        'pode_avaliar': pode_avaliar,
+        'disciplinas_permitidas_json': json.dumps(disciplinas_permitidas_ids),
+        'disciplinas_avaliadas_json': json.dumps(disciplinas_avaliadas_ids), # <--- NOVO JSON AQUI
     }
 
     return render(request, 'avaliacoes/detalhes_professor.html', context)
 
 @require_POST
 @login_required # Garante que o usuário está logado
+@transaction.atomic # Garante que todas as operações de DB sejam bem-sucedidas
 def salvar_avaliacao_api(request):
     try:
         data = json.loads(request.body)
-        
         disciplina_pessoa_id = data.get('disciplina_pessoa_id')
+        
         if not disciplina_pessoa_id:
             return JsonResponse({'success': False, 'error': 'Disciplina não selecionada'}, status=400)
 
-        disciplina_pessoa = DisciplinaPessoa.objects.get(pk=disciplina_pessoa_id)
+        # 1. VALIDAÇÃO DE PERMISSÃO E MATRÍCULA
         
-        # 1. Cria a Avaliacao "pai"
-        nova_avaliacao = Avaliacao.objects.create(
-            disciplina_pessoa=disciplina_pessoa
-        )
-
-        # 2. Busca as categorias para usar as FKs
+        # 1a. Verifica se o usuário logado é um Aluno
+        if request.user.user_type != 'aluno':
+            return JsonResponse({'success': False, 'error': 'Acesso negado. Apenas alunos podem enviar avaliações.'}, status=403)
+        
         try:
-            categoria_didatica = Categoria.objects.get(nome_categoria='Didática')
-            categoria_dificuldade = Categoria.objects.get(nome_categoria='Dificuldade')
-            categoria_relacionamento = Categoria.objects.get(nome_categoria='Relacionamento')
-            categoria_pontualidade = Categoria.objects.get(nome_categoria='Pontualidade')
-        except Categoria.DoesNotExist as e:
-            return JsonResponse({'success': False, 'error': f'Categoria não encontrada no banco de dados: {e}'}, status=500)
+            # Tenta buscar o perfil Aluno e o vínculo DisciplinaPessoa
+            aluno_logado = Aluno.objects.get(user=request.user)
+            disciplina_pessoa = get_object_or_404(DisciplinaPessoa, pk=disciplina_pessoa_id)
+            
+            # 1b. Verifica se o Aluno está ATUALMENTE matriculado
+            if not MatriculaAluno.objects.filter(aluno=aluno_logado, disciplina_professor=disciplina_pessoa).exists():
+                 return JsonResponse({'success': False, 'error': 'Você não está matriculado nesta disciplina e não pode avaliá-la.'}, status=403)
+                 
+            # 1c. NOVO BLOQUEIO: Verifica se a avaliação já existe
+            # ESTA CHECAGEM SÓ FUNCIONA SE SUA MODEL 'Avaliacao' TIVER UM CAMPO ForeignKey PARA 'aluno'
+            if Avaliacao.objects.filter(disciplina_pessoa=disciplina_pessoa, aluno=aluno_logado).exists():
+                 return JsonResponse({'success': False, 'error': 'Você já enviou uma avaliação para esta disciplina.'}, status=403)
+                 
+        except Aluno.DoesNotExist:
+            return JsonResponse({'success': False, 'error': 'Perfil de aluno não encontrado para o usuário logado.'}, status=403)
 
-        # 3. Cria as AvaliacaoCategoria (as 4 notas)
-        AvaliacaoCategoria.objects.create(
-            avaliacao=nova_avaliacao, 
-            categoria=categoria_didatica, 
-            nota=float(data.get('didatica'))
+        # --- A PARTIR DAQUI, AVALIAÇÃO É PERMITIDA ---
+        
+        # 2. Cria a Avaliacao "pai"
+        # CORREÇÃO: Passa o objeto 'aluno_logado' para ligar a avaliação ao aluno.
+        nova_avaliacao = Avaliacao.objects.create(
+            disciplina_pessoa=disciplina_pessoa,
+            aluno=aluno_logado 
         )
-        AvaliacaoCategoria.objects.create(
-            avaliacao=nova_avaliacao, 
-            categoria=categoria_dificuldade, 
-            nota=float(data.get('dificuldade'))
-        )
-        AvaliacaoCategoria.objects.create(
-            avaliacao=nova_avaliacao, 
-            categoria=categoria_relacionamento, 
-            nota=float(data.get('relacionamento'))
-        )
-        AvaliacaoCategoria.objects.create(
-            avaliacao=nova_avaliacao, 
-            categoria=categoria_pontualidade, 
-            nota=float(data.get('pontualidade'))
-        )
+
+        # 3. Busca as categorias para usar as FKs
+        try:
+            categorias = {
+                'didatica': Categoria.objects.get(nome_categoria='Didática'),
+                'dificuldade': Categoria.objects.get(nome_categoria='Dificuldade'),
+                'relacionamento': Categoria.objects.get(nome_categoria='Relacionamento'),
+                'pontualidade': Categoria.objects.get(nome_categoria='Pontualidade'),
+            }
+        except Categoria.DoesNotExist as e:
+            # Garante que a transação seja desfeita se faltar categoria
+            transaction.set_rollback(True) 
+            return JsonResponse({'success': False, 'error': 'Categoria não encontrada no banco de dados. Contate o administrador.'}, status=500)
+
+        # 4. Cria as AvaliacaoCategoria (as 4 notas)
+        for key, categoria_obj in categorias.items():
+            AvaliacaoCategoria.objects.create(
+                avaliacao=nova_avaliacao, 
+                categoria=categoria_obj, 
+                nota=float(data.get(key))
+            )
         
         return JsonResponse({'success': True})
 
     except DisciplinaPessoa.DoesNotExist:
         return JsonResponse({'success': False, 'error': 'Disciplina inválida'}, status=404)
     except Exception as e:
+        # Pega erros de JSON, conversão de float, ou outros erros inesperados
         return JsonResponse({'success': False, 'error': str(e)}, status=400)
+
+
+# @require_POST
+# @login_required # Garante que o usuário está logado
+# def salvar_avaliacao_api(request):
+#     try:
+#         data = json.loads(request.body)
+        
+#         disciplina_pessoa_id = data.get('disciplina_pessoa_id')
+#         if not disciplina_pessoa_id:
+#             return JsonResponse({'success': False, 'error': 'Disciplina não selecionada'}, status=400)
+
+#         disciplina_pessoa = DisciplinaPessoa.objects.get(pk=disciplina_pessoa_id)
+        
+#         # 1. Cria a Avaliacao "pai"
+#         nova_avaliacao = Avaliacao.objects.create(
+#             disciplina_pessoa=disciplina_pessoa
+#         )
+
+#         # 2. Busca as categorias para usar as FKs
+#         try:
+#             categoria_didatica = Categoria.objects.get(nome_categoria='Didática')
+#             categoria_dificuldade = Categoria.objects.get(nome_categoria='Dificuldade')
+#             categoria_relacionamento = Categoria.objects.get(nome_categoria='Relacionamento')
+#             categoria_pontualidade = Categoria.objects.get(nome_categoria='Pontualidade')
+#         except Categoria.DoesNotExist as e:
+#             return JsonResponse({'success': False, 'error': f'Categoria não encontrada no banco de dados: {e}'}, status=500)
+
+#         # 3. Cria as AvaliacaoCategoria (as 4 notas)
+#         AvaliacaoCategoria.objects.create(
+#             avaliacao=nova_avaliacao, 
+#             categoria=categoria_didatica, 
+#             nota=float(data.get('didatica'))
+#         )
+#         AvaliacaoCategoria.objects.create(
+#             avaliacao=nova_avaliacao, 
+#             categoria=categoria_dificuldade, 
+#             nota=float(data.get('dificuldade'))
+#         )
+#         AvaliacaoCategoria.objects.create(
+#             avaliacao=nova_avaliacao, 
+#             categoria=categoria_relacionamento, 
+#             nota=float(data.get('relacionamento'))
+#         )
+#         AvaliacaoCategoria.objects.create(
+#             avaliacao=nova_avaliacao, 
+#             categoria=categoria_pontualidade, 
+#             nota=float(data.get('pontualidade'))
+#         )
+        
+#         return JsonResponse({'success': True})
+
+#     except DisciplinaPessoa.DoesNotExist:
+#         return JsonResponse({'success': False, 'error': 'Disciplina inválida'}, status=404)
+#     except Exception as e:
+#         return JsonResponse({'success': False, 'error': str(e)}, status=400)
 
 
 @require_POST
@@ -837,15 +958,16 @@ def selecionar_aluno_para_editar(request):
 
 @staff_member_required
 def editar_aluno(request, aluno_id):
+    # 1. Carregar o Aluno
     aluno = get_object_or_404(Aluno, pk=aluno_id)
-    user = aluno.user
+    user = aluno.user # O CustomUser ligado ao Aluno
 
     if request.method == 'POST':
         # --- LÓGICA DE EXCLUSÃO ---
         if 'submit_delete' in request.POST:
             try:
                 nome_aluno = user.get_full_name()
-                user.delete() # Deleta o User (o Aluno some em cascata)
+                user.delete() # Deleta o CustomUser (o Aluno some em cascata)
                 messages.success(request, f"Aluno '{nome_aluno}' excluído com sucesso.")
                 return redirect('selecionar_aluno_para_editar')
             except Exception as e:
@@ -854,7 +976,8 @@ def editar_aluno(request, aluno_id):
 
         # --- LÓGICA DE EDIÇÃO (Nome/Email) ---
         elif 'submit_profile' in request.POST:
-            user_form = UserProfileForm(request.POST, instance=user, prefix='user')
+            # Assumindo que UserProfileForm é uma classe que você definiu
+            user_form = UserProfileForm(request.POST, instance=user, prefix='user') 
             
             if user_form.is_valid():
                 user_form.save()
@@ -865,10 +988,223 @@ def editar_aluno(request, aluno_id):
 
     else:
         # GET request: carrega o formulário preenchido
-        user_form = UserProfileForm(instance=user, prefix='user')
+        # Assumindo que UserProfileForm é uma classe que você definiu
+        user_form = UserProfileForm(instance=user, prefix='user') 
+
+    # --- CARREGAMENTO DE DADOS PARA O CONTEXTO ---
+
+    # 1. Professores (Consulta Corrigida)
+    professores = CustomUser.objects.filter(user_type='professor').order_by('first_name', 'last_name')
+    
+    # 2. Disciplinas Atribuídas ao Aluno (Consulta Corrigida para MatriculaAluno)
+    # Busca todas as matrículas do Aluno (usando o novo modelo)
+    # prefetch_related para buscar os dados de Professor e Matéria em menos consultas
+    matriculas_do_aluno = MatriculaAluno.objects.filter(
+        aluno=aluno # Filtra pelo objeto Aluno atual
+    ).select_related(
+        'disciplina_professor'
+    ).prefetch_related(
+        'disciplina_professor__pessoa',      # O CustomUser do Professor
+        'disciplina_professor__disciplina'   # O objeto Matéria/Disciplina
+    ).order_by(
+        'disciplina_professor__pessoa__first_name', 
+        'disciplina_professor__disciplina__nome'
+    )
 
     context = {
         'aluno': aluno,
-        'user_form': user_form
+        'user_form': user_form,
+        'professores': professores, 
+        # ATUALIZE o contexto para usar o nome da nova query na template
+        'disciplinas_atribuidas': matriculas_do_aluno, 
     }
+    # Certifique-se de que o template é 'avaliacoes/editar_aluno.html'
     return render(request, 'avaliacoes/editar_aluno.html', context)
+
+@require_http_methods(["GET"])
+def get_disciplinas_professor(request):
+    professor_id = request.GET.get('professor_id')
+    aluno_id = request.GET.get('aluno_id') # <-- NOVO: Capitura o ID do aluno
+
+    if not professor_id or not aluno_id:
+        return JsonResponse({'disciplinas': []})
+    
+    # 1. Disciplinas que o PROFESSOR leciona
+    # IDs dos vínculos DisciplinaPessoa que o professor está ATIVO
+    vinculos_professor_ids = DisciplinaPessoa.objects.filter(
+        pessoa_id=professor_id, 
+        status='ativo'
+    ).values_list('id', flat=True)
+
+    # 2. Vínculos que o ALUNO JÁ TEM
+    # IDs dos vínculos DisciplinaPessoa que o aluno JÁ ESTÁ MATRICULADO
+    vinculos_aluno_matriculado_ids = MatriculaAluno.objects.filter(
+        aluno_id=aluno_id
+    ).values_list('disciplina_professor_id', flat=True)
+    
+    # 3. COMBINAR FILTROS (Professor Leciona E Aluno Não Tem)
+    # Busca os IDs dos vínculos que o professor leciona, 
+    # EXCLUINDO aqueles que o aluno já está matriculado.
+    vinculos_finais_ids = vinculos_professor_ids.exclude(
+        id__in=vinculos_aluno_matriculado_ids
+    ).values_list('disciplina_id', flat=True) # Retorna os IDs das Matérias (Materia.id)
+
+    # 4. Busca os dados finais das Matérias
+    disciplinas = Materia.objects.filter(
+        id__in=vinculos_finais_ids
+    ).values('id', 'nome').order_by('nome')
+    
+    return JsonResponse({'disciplinas': list(disciplinas)})
+
+# 2. View para Adicionar Disciplina
+@staff_member_required # Assumindo que apenas staff pode adicionar matrícula
+@require_http_methods(["POST"])
+@transaction.atomic 
+def adicionar_disciplina_professor(request):
+    try:
+        # Tenta decodificar o JSON
+        data = json.loads(request.body)
+        aluno_id = data.get('aluno_id') # Recebe o ID do objeto Aluno (14)
+        professor_id = data.get('professor_id') # Recebe o ID do CustomUser do professor (21)
+        disciplina_id = data.get('disciplina_id')
+    except json.JSONDecodeError:
+        return JsonResponse({'success': False, 'message': 'JSON inválido.'}, status=400)
+
+    # 1. Validação de Campos
+    if not aluno_id or not professor_id or not disciplina_id:
+        return JsonResponse({'success': False, 'message': 'Aluno, Professor e Disciplina são obrigatórios.'}, status=400)
+
+    try:
+        # 2. Busca o Aluno (usando o modelo Aluno, que é o que o ID se refere)
+        aluno = get_object_or_404(Aluno, id=aluno_id)
+        
+        # 3. Busca o Vínculo Professor-Disciplina (o objeto DisciplinaPessoa)
+        # Verifica se o vínculo entre o CustomUser do Professor e a Matéria existe e está ativo
+        disciplina_professor_vinculo = get_object_or_404(
+            DisciplinaPessoa, 
+            pessoa_id=professor_id, # Pessoa_id é o CustomUser.id do Professor
+            disciplina_id=disciplina_id,
+            status='ativo' 
+        )
+        
+        # 4. Cria o registro de Matrícula do Aluno
+        # O FK MatriculaAluno.aluno espera um objeto Aluno, que acabamos de buscar.
+        MatriculaAluno.objects.create(
+            aluno=aluno, # <--- OBJETO ALUNO CORRETO
+            disciplina_professor=disciplina_professor_vinculo
+        )
+
+        return JsonResponse({'success': True, 'message': f'Aluno {aluno.user.get_full_name()} matriculado com sucesso na disciplina.'})
+        
+    except IntegrityError:
+        # Pega o erro de duplicação da restrição unique_together em MatriculaAluno
+        return JsonResponse({'success': False, 'message': 'O aluno já está matriculado nesta disciplina com este professor.'}, status=409)
+    except Exception as e:
+        # Erro genérico (ex: CustomUser ou Materia não encontrado)
+        return JsonResponse({'success': False, 'message': f'Erro ao processar a matrícula: {e}'}, status=500)
+
+# 3. View para Excluir Disciplina
+@require_http_methods(["DELETE"])
+def excluir_disciplina_professor(request, id):
+    try:
+        disciplina_pessoa = get_object_or_404(DisciplinaPessoa, id=id)
+        disciplina_pessoa.delete() # Exclui do banco
+        return JsonResponse({'success': True, 'message': 'Disciplina removida com sucesso.'})
+    except Exception as e:
+        return JsonResponse({'success': False, 'message': str(e)}, status=500)
+
+# 4. View para Recarregar a Tabela (Renderiza o Partial Template)
+from django.http import HttpResponse, JsonResponse
+from django.template.loader import render_to_string
+from django.views.decorators.http import require_http_methods
+from django.contrib.admin.views.decorators import staff_member_required
+from django.shortcuts import get_object_or_404
+from .models import Aluno, MatriculaAluno 
+
+@staff_member_required
+@require_http_methods(["GET"])
+def get_disciplinas_table(request):
+    # 1. CORREÇÃO: Obter o ID do aluno, não do professor
+    aluno_id = request.GET.get('aluno_id')
+
+    if aluno_id:
+        try:
+            # Busca o objeto Aluno (para garantir que ele existe)
+            aluno = get_object_or_404(Aluno, pk=aluno_id)
+            
+            # 2. CORREÇÃO: Filtrar o modelo MatriculaAluno por Aluno
+            # Usamos a mesma consulta eficiente da view 'editar_aluno'
+            matriculas_do_aluno = MatriculaAluno.objects.filter(
+                aluno=aluno 
+            ).select_related(
+                'disciplina_professor'
+            ).prefetch_related(
+                'disciplina_professor__pessoa',     # CustomUser do Professor
+                'disciplina_professor__disciplina'  # Matéria
+            ).order_by(
+                'disciplina_professor__pessoa__first_name', 
+                'disciplina_professor__disciplina__nome'
+            )
+            
+            # Mantemos o nome da variável para o template
+            disciplinas_atribuidas = matriculas_do_aluno 
+            
+        except Exception:
+            # Caso o Aluno não exista (embora o get_object_or_404 já cuide disso)
+            disciplinas_atribuidas = MatriculaAluno.objects.none()
+            
+    else:
+        # Se o aluno_id não for fornecido, retorna vazio
+        disciplinas_atribuidas = MatriculaAluno.objects.none()
+        
+    # 3. Renderiza o partial
+    html_table = render_to_string(
+        'avaliacoes/partial_disciplinas_table.html', 
+        {'disciplinas_atribuidas': disciplinas_atribuidas},
+        request=request
+    )
+    
+    return HttpResponse(html_table)
+
+@staff_member_required
+@require_http_methods(["DELETE"])
+@transaction.atomic # Garante que as exclusões ocorram juntas
+def excluir_matricula_aluno(request, matricula_id):
+    """
+    Exclui um registro de MatriculaAluno e, em cascata, remove 
+    a avaliação que o aluno fez para aquela disciplina/professor.
+    """
+    
+    try:
+        matricula = get_object_or_404(MatriculaAluno, pk=matricula_id)
+        
+        # OBTÉM OS OBJETOS RELACIONADOS
+        aluno = matricula.aluno # O Aluno que fez a matrícula
+        disciplina_professor_vinculo = matricula.disciplina_professor
+        
+        # 1. REMOVE A AVALIAÇÃO FEITA PELO ALUNO PARA ESTE VÍNCULO
+        # Isso permite que o aluno avalie novamente após a rematrícula.
+        # Filtra pelo aluno e pelo vínculo DisciplinaPessoa
+        avaliacoes_para_deletar = Avaliacao.objects.filter(
+            aluno=aluno,
+            disciplina_pessoa=disciplina_professor_vinculo
+        )
+        
+        if avaliacoes_para_deletar.exists():
+            # Deletar Avaliacao também deleta AvaliacaoCategoria em cascata
+            avaliacoes_deletadas = avaliacoes_para_deletar.count()
+            avaliacoes_para_deletar.delete()
+        else:
+            avaliacoes_deletadas = 0
+
+        # 2. DELETA A MATRÍCULA
+        matricula.delete()
+        
+        return JsonResponse({
+            'success': True, 
+            'message': f'Matrícula removida com sucesso. ({avaliacoes_deletadas} avaliação(ões) limpa(s)).'
+        })
+        
+    except Exception as e:
+        # Se ocorrer um erro, a transação.atomic garante que nada será salvo/deletado
+        return JsonResponse({'success': False, 'message': f'Erro ao excluir matrícula e avaliação: {e}'}, status=500)
