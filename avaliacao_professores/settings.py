@@ -28,9 +28,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-6=nd%qlj54)xdt839cr$58#__es7japrtb)*cgxg*aor_7hh7('
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['kaua2004.pythonanywhere.com']
 
 
 # Application definition
@@ -121,11 +121,17 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
+import os  # (Se já estiver importado no topo, não precisa repetir aqui)
+
 STATIC_URL = 'static/'
 
-import os
+# ORIGEM: Onde você edita seus CSS/JS
 STATICFILES_DIRS = [
-    os.path.join(BASE_DIR, 'static'),]
+    os.path.join(BASE_DIR, 'static'),
+]
+
+# DESTINO: Para onde o collectstatic copia os arquivos (Mude aqui!)
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
