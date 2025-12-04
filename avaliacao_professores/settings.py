@@ -123,7 +123,7 @@ USE_TZ = True
 
 import os  # (Se já estiver importado no topo, não precisa repetir aqui)
 
-STATIC_URL = 'static/'
+STATIC_URL = '/static/'
 
 # ORIGEM: Onde você edita seus CSS/JS
 STATICFILES_DIRS = [
