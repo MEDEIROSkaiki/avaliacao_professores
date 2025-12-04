@@ -9,3 +9,4 @@ pip-freeze.txt
 requirements.txt
 *.log
 .env
+db.sqlite3
