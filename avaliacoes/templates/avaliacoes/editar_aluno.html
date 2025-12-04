@@ -2,6 +2,7 @@
 
 {% block content %}
 <style>
+    /* ... (Mantenha seus estilos CSS existentes) ... */
     .edit-wrapper {
         width: 90%;
         max-width: 800px;
@@ -21,15 +22,21 @@
     /* Estilo Básico de Form */
     .form-group { margin-bottom: 15px; }
     label { display: block; margin-bottom: 5px; font-weight: 600; color: var(--verde-escuro-letras); }
-    input[type="text"], input[type="email"] {
-        width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px;
+    input[type="text"], input[type="email"], select {
+        width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box;
     }
 
     .btn-save { background-color: var(--verde); color: white; padding: 10px 20px; border: none; border-radius: 6px; cursor: pointer; width: 100%; font-size: 1rem; margin-top: 10px;}
-    .btn-delete { background-color: #e74c3c; color: white; padding: 10px 20px; border: none; border-radius: 6px; cursor: pointer; width: 100%; font-size: 1rem; margin-top: 10px;}
-    
+    .btn-add { background-color: var(--azul-marinho); color: white; padding: 10px 20px; border: none; border-radius: 6px; cursor: pointer; font-size: 1rem; }
+    .btn-delete-small { background-color: #e74c3c; color: white; padding: 5px 10px; border: none; border-radius: 4px; cursor: pointer; font-size: 0.8rem;}
+
     .btn-save:hover { opacity: 0.9; }
-    .btn-delete:hover { background-color: #c0392b; }
+    .btn-add:hover { background-color: #34495e; }
+    .btn-delete-small:hover { background-color: #c0392b; }
+    
+    .tabela-disciplinas { width: 100%; border-collapse: collapse; margin-top: 20px; }
+    .tabela-disciplinas th, .tabela-disciplinas td { border: 1px solid #eee; padding: 10px; text-align: left; }
+    .tabela-disciplinas th { background-color: #f7f7f7; font-weight: 600; }
 </style>
 
 <div class="edit-wrapper">
@@ -55,6 +62,43 @@
         </form>
     </div>
 
+    <div class="card-panel">
+        <h2>Gerenciar Disciplinas de Professores</h2>
+        <input type="hidden" id="aluno_id_hidden" value="{{ aluno.id }}">
+        <div class="form-group">
+            <label for="professor_select">Selecione o Professor:</label>
+            <select id="professor_select" name="professor_id">
+                <option value="">-- Selecione --</option>
+                {% for professor in professores %}
+                    <option value="{{ professor.id }}">{{ professor.first_name }} {{ professor.last_name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="disciplina_select">Selecione a Disciplina:</label>
+            <select id="disciplina_select" name="disciplina_id" disabled>
+                <option value="">-- Selecione um professor primeiro --</option>
+            </select>
+        </div>
+        
+        <button id="add_disciplina_btn" type="button" class="btn-add" disabled>Adicionar Disciplina</button>
+        
+        <h3 style="margin-top: 30px; margin-bottom: 10px; color: var(--azul-marinho);">Disciplinas Atribuídas</h3>
+        <table class="tabela-disciplinas">
+            <thead>
+                <tr>
+                    <th>Professor</th>
+                    <th>Disciplina</th>
+                    <th>Ação</th>
+                </tr>
+            </thead>
+            <tbody id="tabela_disciplinas_body">
+                {% include 'avaliacoes/partial_disciplinas_table.html' with disciplinas_atribuidas=disciplinas_atribuidas %}
+            </tbody>
+        </table>
+    </div>
+
     <div class="card-panel" style="border: 1px solid #fab1a0;">
         <h2 style="color: #c0392b; border-color: #fab1a0;">Excluir Aluno</h2>
         <p style="color: #555; margin-bottom: 15px;">
@@ -66,4 +110,194 @@
         </form>
     </div>
 </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const professorSelect = document.getElementById('professor_select');
+        const disciplinaSelect = document.getElementById('disciplina_select');
+        const addDisciplinaBtn = document.getElementById('add_disciplina_btn');
+        const tabelaBody = document.getElementById('tabela_disciplinas_body');
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+        const alunoId = document.getElementById('aluno_id_hidden').value; // ID do Aluno
+
+        // --- 1. Carregar Disciplinas do Professor ---
+        professorSelect.addEventListener('change', function() {
+            const professorId = this.value;
+            // O alunoId já está disponível na variável global 'alunoId'
+            
+            disciplinaSelect.innerHTML = '<option value="">Carregando...</option>';
+            disciplinaSelect.disabled = true;
+            addDisciplinaBtn.disabled = true;
+
+            if (professorId) {
+                // Requisição AJAX para buscar disciplinas (filtradas pelo professor e pelo aluno)
+                fetch(`{% url 'get_disciplinas_professor' %}?professor_id=${professorId}&aluno_id=${alunoId}`, {
+                    method: 'GET',
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    disciplinaSelect.innerHTML = '<option value="">-- Selecione a Disciplina --</option>';
+                    data.disciplinas.forEach(disciplina => {
+                        const option = document.createElement('option');
+                        option.value = disciplina.id;
+                        option.textContent = disciplina.nome;
+                        disciplinaSelect.appendChild(option);
+                    });
+                    disciplinaSelect.disabled = false;
+                    addDisciplinaBtn.disabled = disciplinaSelect.value === '';
+                    
+                    // REMOVIDA A CHAMADA loadDisciplinasTable AQUI.
+                })
+                .catch(error => {
+                    console.error('Erro ao carregar disciplinas:', error);
+                    disciplinaSelect.innerHTML = '<option value="">Erro ao carregar</option>';
+                });
+            } else {
+                disciplinaSelect.innerHTML = '<option value="">-- Selecione um professor primeiro --</option>';
+                disciplinaSelect.disabled = true;
+                
+                // Limpa a tabela (se o professor for deselecionado)
+                // Isto pode não ser o ideal se você quiser manter as matrículas listadas.
+                // tabelaBody.innerHTML = ''; 
+            }
+        });
+        
+        disciplinaSelect.addEventListener('change', function() {
+            addDisciplinaBtn.disabled = this.value === '';
+        });
+
+        // --- 2. Adicionar Disciplina ao Aluno (Matrícula) ---
+        addDisciplinaBtn.addEventListener('click', function() {
+            // alunoId já está na variável 'alunoId'
+            const professorId = professorSelect.value;
+            const disciplinaId = disciplinaSelect.value;
+
+            if (!professorId || !disciplinaId || !alunoId) {
+                alert('Selecione um professor e uma disciplina (verifique se o ID do aluno está disponível).'); 
+                return;
+            }
+
+            // Requisição AJAX para adicionar disciplina (Matrícula)
+            fetch("{% url 'adicionar_disciplina_professor' %}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrfToken,
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: JSON.stringify({
+                    professor_id: professorId,
+                    disciplina_id: disciplinaId,
+                    aluno_id: alunoId
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // 1. Recarrega a tabela de matrículas do ALUNO
+                    loadDisciplinasTable(alunoId); // <--- CORREÇÃO: USANDO ALUNO_ID!
+                    
+                    // 2. Dispara o evento change para atualizar o select (filtro de disciplinas disponíveis)
+                    professorSelect.dispatchEvent(new Event('change')); 
+                    
+                    // 3. Opcional: Reseta o select de disciplina
+                    disciplinaSelect.value = ''; 
+                    addDisciplinaBtn.disabled = true;
+
+                    alert('Disciplina adicionada com sucesso!');
+                } else {
+                    alert('Erro ao adicionar disciplina: ' + (data.message || 'Erro desconhecido.'));
+                }
+            })
+            .catch(error => {
+                console.error('Erro na requisição para adicionar disciplina:', error);
+                alert('Erro na requisição para adicionar disciplina.');
+            });
+        });
+        
+        // --- 3. Função para Recarregar a Tabela de Matrículas do Aluno ---
+        function loadDisciplinasTable(alunoIdParaFiltro) { // Recebe o ID do Aluno
+            // Requisição AJAX para buscar a tabela renderizada
+            // A view get_disciplinas_table deve usar este aluno_id para filtrar MatriculaAluno
+            fetch(`{% url 'get_disciplinas_table' %}?aluno_id=${alunoIdParaFiltro}`, { // <--- CORREÇÃO NA URL
+                method: 'GET',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.text())
+            .then(html => {
+                tabelaBody.innerHTML = html;
+                // Reatacha os listeners de exclusão
+                attachDeleteListeners(); 
+            })
+            .catch(error => {
+                console.error('Erro ao carregar a tabela:', error);
+                tabelaBody.innerHTML = '<tr><td colspan="3">Erro ao carregar as matrículas do aluno.</td></tr>';
+            });
+        }
+        
+        // --- 4. Excluir Matrícula do Aluno ---
+        function attachDeleteListeners() {
+            document.querySelectorAll('.btn-delete-small').forEach(button => {
+                // O botão no partial_disciplinas_table.html usa data-matricula-id
+                button.removeEventListener('click', handleDelete); 
+                button.addEventListener('click', handleDelete);
+            });
+        }
+        
+        function handleDelete(event) {
+            // Pega o ID da Matrícula do Aluno (MatriculaAluno.id)
+            const idParaExcluir = event.target.dataset.matriculaId; // <--- CORREÇÃO NO NOME DO ATRIBUTO
+            // O ID do aluno para recarregar a tabela
+            const alunoIdParaRecarregar = alunoId; // Usa a variável global
+
+            if (!confirm('Tem certeza que deseja remover esta matrícula do aluno?')) {
+                return;
+            }
+
+            // Requisição AJAX para excluir (Agora deve excluir o objeto MatriculaAluno)
+            // A URL deve ser ajustada para usar o ID da matrícula, não o ID da DisciplinaPessoa!
+            fetch(`{% url 'excluir_matricula_aluno' matricula_id=0 %}`.replace('0', idParaExcluir), {
+                method: 'DELETE',
+                headers: {
+                    'X-CSRFToken': csrfToken,
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => {
+                if (response.ok) {
+                    return response.json();
+                }
+                throw new Error('Falha na requisição de exclusão.');
+            })
+            .then(data => {
+                if (data.success) {
+                    // Recarrega a tabela do aluno e o select de disciplinas disponíveis
+                    loadDisciplinasTable(alunoIdParaRecarregar);
+                    professorSelect.dispatchEvent(new Event('change')); 
+                    alert('Matrícula removida com sucesso!');
+                } else {
+                    alert('Erro ao remover matrícula: ' + (data.message || 'Erro desconhecido.'));
+                }
+            })
+            .catch(error => {
+                console.error('Erro ao excluir matrícula:', error);
+                alert('Erro na requisição para excluir matrícula.');
+            });
+        }
+        
+        // --- Carga Inicial ---
+        // Inicializa listeners de exclusão na primeira carga
+        attachDeleteListeners();
+        
+        // Carrega a tabela para o aluno no carregamento inicial
+        if(alunoId) {
+            loadDisciplinasTable(alunoId); // <--- CORREÇÃO: USANDO ALUNO_ID
+        }
+    });
+</script>
 {% endblock %}

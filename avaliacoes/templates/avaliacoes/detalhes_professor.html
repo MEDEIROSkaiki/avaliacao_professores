@@ -252,7 +252,6 @@
     </aside>
 
     <section class="evaluation-main">
-      
       <div class="unified-card">
         
         <div class="disciplina-select-group">
@@ -264,6 +263,21 @@
             {% endfor %}
           </select>
         </div>
+        {% if request.user.user_type == 'aluno' and not pode_avaliar %}
+                        <div class="unauthorized-message" style="
+                            padding: 15px; 
+                            margin-bottom: 25px; 
+                            border: 1px solid #f0ad4e; /* Laranja */
+                            background-color: #fff8e1; 
+                            color: #8a6d3b; 
+                            border-radius: 8px; 
+                            text-align: center;
+                        ">
+                            <p style="margin: 0; font-weight: 500;">
+                                <i class="fa-solid fa-circle-exclamation"></i> Você não está matriculado em nenhuma disciplina ministrada por este professor e, portanto, não pode enviar avaliações.
+                            </p>
+                        </div>
+          {% endif %}        
 
         {% if request.user.user_type == 'admin' %}
             <div class="chart-container">
@@ -271,7 +285,7 @@
             </div>
         {% endif %}
 
-        {% if request.user.user_type == 'aluno' %}
+        {% if pode_avaliar %}
             <form id="rating-form">
             {% csrf_token %}
             <h3>Avaliar a disciplina selecionada</h3>
@@ -296,12 +310,13 @@
             <button type="submit" class="btn-submit">Submeter Avaliação</button>
             </form>
         {% endif %}
+        <div id="ajax-message-container" style="margin-bottom: 25px;margin-top:10px"></div>
       </div>
     </section>
   
     <section class="comment-card">
       
-      {% if request.user.user_type == 'aluno' %}
+      {% if pode_avaliar %}
         <form id="comment-form">
             {% csrf_token %}
             <h3>Adicione um comentário para a disciplina selecionada</h3>
@@ -341,207 +356,292 @@
     </section>
   </div>
 </div>
-
 <script>
-  const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
-  
-  // Só carrega os dados se o usuário for ADMIN para evitar exposição no código fonte
-  {% if request.user.user_type == 'admin' %}
-    const graficoData = JSON.parse('{{ dados_grafico_json|safe }}');
-  {% else %}
-    const graficoData = null;
-  {% endif %}
-
-  document.addEventListener('DOMContentLoaded', function() {
-
-    let myChart = null; 
-    const mainSelect = document.getElementById('main-disciplina-select');
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
     
-    // Pega elementos opcionais (podem não existir dependendo do usuário)
-    const ratingForm = document.getElementById('rating-form');
-    const commentForm = document.getElementById('comment-form');
+    // Captura a flag de permissão GERAL (se o aluno pode avaliar alguma coisa)
+    // Garante que o valor seja um booleano JS (true ou false)
+    const podeAvaliar = Boolean('{{ pode_avaliar|lower }}' === 'true'); 
 
-    // --- 1. GRÁFICO (SÓ EXECUTA SE O ELEMENTO EXISTIR) ---
-    const canvasElement = document.getElementById('boxplot');
+    // Captura a lista de IDs de DisciplinaPessoa que o aluno tem matrícula
+    const disciplinasPermitidas = JSON.parse('{{ disciplinas_permitidas_json|default:"[]"|safe }}');
     
-    if (canvasElement && graficoData) {
-        const ctx = canvasElement.getContext('2d');
-        const initialData = graficoData['all'];
+    // NOVO: Captura a lista de IDs de DisciplinaPessoa que o aluno JÁ AVALIOU
+    const disciplinasAvaliadas = JSON.parse('{{ disciplinas_avaliadas_json|default:"[]"|safe }}');
 
-        if (initialData) {
-            const config = {
-                type: 'boxplot',
-                data: {
-                    labels: ['Didática', 'Dificuldade', 'Relacionamento', 'Pontualidade'],
-                    datasets: [{
-                    label: 'Avaliações',
-                    data: [
-                        initialData.didatica,
-                        initialData.dificuldade,
-                        initialData.relacionamento,
-                        initialData.pontualidade
-                    ],
-                    backgroundColor: ['#d1eef4', '#d4edda', '#fff3cd', '#e2d9f3'],
-                    borderColor: ['#0b2958', '#155724', '#856404', '#381c5c'],
-                    borderWidth: 1.5,
-                    padding: 10,
-                    itemRadius: 3,
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: { legend: { display: false } },
-                    scales: { y: { beginAtZero: true, max: 10 } }
-                }
-            };
-            myChart = new Chart(ctx, config);
-        }
+    // Só carrega os dados se o usuário for ADMIN para evitar exposição no código fonte
+    {% if request.user.user_type == 'admin' %}
+        const graficoData = JSON.parse('{{ dados_grafico_json|safe }}');
+    {% else %}
+        const graficoData = null;
+    {% endif %}
+
+    // --- FUNÇÃO PARA EXIBIR MENSAGENS NO DOM (SUBSTITUI O ALERT) ---
+    function displayMessage(message, isSuccess) {
+        const container = document.getElementById('ajax-message-container');
+        if (!container) return; // Se o container não existir, sai
+
+        // Define estilo (verde para sucesso, vermelho/laranja para erro)
+        const bgColor = isSuccess ? '#d4edda' : '#f8d7da'; // Verde claro ou Vermelho claro
+        const borderColor = isSuccess ? '#c3e6cb' : '#f5c6cb';
+        const color = isSuccess ? '#155724' : '#721c24';
+
+        container.innerHTML = `
+            <div style="
+                padding: 15px; 
+                border: 1px solid ${borderColor}; 
+                background-color: ${bgColor};
+                color: ${color}; 
+                border-radius: 8px;
+                font-weight: 500;
+                text-align: center;
+            ">
+                ${message}
+            </div>
+        `;
+        // Remove a mensagem após 5 segundos
+        setTimeout(() => { container.innerHTML = ''; }, 5000);
     }
+    // ---------------------------------------------------------------------
 
-    // --- 2. ATUALIZAR GRÁFICO ---
-    function updateChart(disciplinaId) {
-      if (!myChart || !graficoData) return; // Se não tem gráfico, não faz nada
+    document.addEventListener('DOMContentLoaded', function() {
 
-      const dataForChart = graficoData[disciplinaId];
-      if (!dataForChart) {
-        myChart.data.datasets[0].data = [[], [], [], []];
-        myChart.update();
-        return;
-      }
-      myChart.data.datasets[0].data = [
-        dataForChart.didatica,
-        dataForChart.dificuldade,
-        dataForChart.relacionamento,
-        dataForChart.pontualidade
-      ];
-      myChart.update();
-    }
-
-    // --- 3. MOSTRAR/ESCONDER FORMULÁRIOS (SÓ SE EXISTIREM) ---
-    function toggleFormsVisibility(show) {
-      if(ratingForm) ratingForm.style.display = show ? 'block' : 'none';
-      if(commentForm) commentForm.style.display = show ? 'block' : 'none';
-    }
-
-    // --- 4. FILTRAR COMENTÁRIOS ---
-    function updateCommentVisibility(disciplinaId) {
-      const allComments = document.querySelectorAll('.comment-item');
-      if (allComments.length === 0) return; // Se não tem comentários, sai
-
-      const noCommentsMsg = document.getElementById('no-comments-message');
-      const noFilterMsg = document.getElementById('no-filter-results-message');
-      
-      let commentsFound = 0;
-
-      allComments.forEach(comment => {
-        const commentDisciplinaId = comment.dataset.disciplinaId;
-        if (disciplinaId === 'all' || commentDisciplinaId === disciplinaId) {
-          comment.style.display = 'block';
-          commentsFound++;
-        } else {
-          comment.style.display = 'none';
-        }
-      });
-
-      if (noCommentsMsg) noCommentsMsg.style.display = 'none';
-      if (noFilterMsg) noFilterMsg.style.display = 'none';
-
-      if (commentsFound === 0) {
-        if (allComments.length === 0 && noCommentsMsg) {
-          noCommentsMsg.style.display = 'block';
-        } else if (noFilterMsg) {
-          noFilterMsg.style.display = 'block';
-        }
-      }
-    }
-
-    // --- 5. EVENTO SELECT ---
-    mainSelect.addEventListener('change', function() {
-      const selectedId = this.value;
-      updateChart(selectedId); 
-      
-      if (selectedId === 'all') {
-        toggleFormsVisibility(false);
-      } else {
-        toggleFormsVisibility(true);
-      }
-      
-      updateCommentVisibility(selectedId);
-    });
-
-    // --- 6. SUBMIT AVALIAÇÃO (SÓ ALUNO) ---
-    if (ratingForm) {
-      ratingForm.addEventListener('submit', function(event) {
-        event.preventDefault();
-        const selectedDisciplinaId = mainSelect.value;
-        if (selectedDisciplinaId === 'all') {
-          alert('Por favor, selecione uma disciplina específica para avaliar.');
-          return;
-        }
-
-        const formData = new FormData(ratingForm);
-        const notas = {
-          disciplina_pessoa_id: selectedDisciplinaId,
-          didatica: formData.get('didatica'),
-          dificuldade: formData.get('dificuldade'),
-          relacionamento: formData.get('relacionamento'),
-          pontualidade: formData.get('pontualidade')
-        };
-
-        fetch("{% url 'salvar_avaliacao_api' %}", {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
-          body: JSON.stringify(notas)
-        })
-        .then(response => response.json())
-        .then(data => {
-          if (data.success) {
-            alert('Avaliação salva com sucesso!');
-            location.reload(); 
-          } else {
-            alert('Erro: ' + data.error);
-          }
-        });
-      });
-    }
-
-    // --- 7. SUBMIT COMENTÁRIO (SÓ ALUNO) ---
-    if (commentForm) {
-      commentForm.addEventListener('submit', function(event) {
-        event.preventDefault();
-        const selectedDisciplinaId = mainSelect.value;
-        if (selectedDisciplinaId === 'all') {
-          alert('Por favor, selecione uma disciplina específica para comentar.');
-          return;
-        }
+        let myChart = null; 
+        const mainSelect = document.getElementById('main-disciplina-select');
         
-        const comentario = {
-          disciplina_pessoa_id: selectedDisciplinaId,
-          texto: document.getElementById('comment-text').value
-        };
+        // Pega elementos opcionais (podem não existir dependendo do usuário)
+        const ratingForm = document.getElementById('rating-form');
+        const commentForm = document.getElementById('comment-form');
 
-        fetch("{% url 'salvar_comentario_api' %}", {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
-          body: JSON.stringify(comentario)
-        })
-        .then(response => response.json())
-        .then(data => {
-          if (data.success) {
-            alert('Comentário salvo!');
-            location.reload(); 
-          } else {
-            alert('Erro: ' + data.error);
-          }
+        // --- 1. GRÁFICO (SÓ EXECUTA SE O ELEMENTO EXISTIR) ---
+        const canvasElement = document.getElementById('boxplot');
+        
+        if (canvasElement && graficoData) {
+            const ctx = canvasElement.getContext('2d');
+            const initialData = graficoData['all'];
+
+            if (initialData) {
+                const config = {
+                    type: 'boxplot',
+                    data: {
+                        labels: ['Didática', 'Dificuldade', 'Relacionamento', 'Pontualidade'],
+                        datasets: [{
+                            label: 'Avaliações',
+                            data: [
+                                initialData.didatica,
+                                initialData.dificuldade,
+                                initialData.relacionamento,
+                                initialData.pontualidade
+                            ],
+                            backgroundColor: ['#d1eef4', '#d4edda', '#fff3cd', '#e2d9f3'],
+                            borderColor: ['#0b2958', '#155724', '#856404', '#381c5c'],
+                            borderWidth: 1.5,
+                            padding: 10,
+                            itemRadius: 3,
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: { y: { beginAtZero: true, max: 10 } }
+                    }
+                };
+                myChart = new Chart(ctx, config);
+            }
+        }
+
+        // --- 2. ATUALIZAR GRÁFICO ---
+        function updateChart(disciplinaId) {
+            if (!myChart || !graficoData) return; // Se não tem gráfico, não faz nada
+
+            const dataForChart = graficoData[disciplinaId];
+            if (!dataForChart) {
+                myChart.data.datasets[0].data = [[], [], [], []];
+                myChart.update();
+                return;
+            }
+            myChart.data.datasets[0].data = [
+                dataForChart.didatica,
+                dataForChart.dificuldade,
+                dataForChart.relacionamento,
+                dataForChart.pontualidade
+            ];
+            myChart.update();
+        }
+
+        // --- 3. MOSTRAR/ESCONDER FORMULÁRIOS (AGORA COM 3 ESTADOS) ---
+        function toggleFormsVisibility(selectedId) {
+            
+            // 1. Permissão geral (usuário é aluno E tem pelo menos uma matrícula)
+            const hasGlobalPermission = podeAvaliar; 
+            
+            // 2. A disciplina selecionada é a opção "Ver todas"?
+            const isAllSelected = selectedId === 'all';
+
+            // Reseta o display dos formulários
+            if(ratingForm) ratingForm.style.display = 'none';
+            if(commentForm) commentForm.style.display = 'none';
+            
+            const container = document.getElementById('ajax-message-container');
+            if (container) container.innerHTML = ''; // Limpa antes de começar
+
+            
+            if (!hasGlobalPermission || isAllSelected) {
+                // Se não tem permissão geral (aviso laranja já está no HTML) ou é 'all', não faz mais nada.
+                return;
+            }
+
+            // Converter selectedId para número para checagem
+            const selectedIdNum = parseInt(selectedId); 
+            
+            // 3. A disciplina selecionada está na lista de IDs permitidos?
+            const isMatriculated = disciplinasPermitidas.includes(selectedIdNum);
+            
+            // 4. A disciplina selecionada JÁ foi avaliada?
+            const hasAlreadyEvaluated = disciplinasAvaliadas.includes(selectedIdNum);
+
+            if (isMatriculated && !hasAlreadyEvaluated) {
+                // Estado 1: PODE AVALIAR (Matriculado e não avaliou)
+                if(ratingForm) ratingForm.style.display = 'block';
+                if(commentForm) commentForm.style.display = 'block';
+                
+            } else if (isMatriculated && hasAlreadyEvaluated) {
+                // Estado 2: JÁ AVALIOU (Matriculado e já avaliou)
+                displayMessage(
+                    'Você já enviou uma avaliação para esta disciplina e professor. Obrigado!', 
+                    true // Sucesso/Informativo
+                );
+
+            } else {
+                // Estado 3: NÃO MATRICULADO NESTA DISCIPLINA ESPECÍFICA (Aviso)
+                displayMessage(
+                    'Você não está matriculado nesta disciplina e não pode avaliá-la.', 
+                    false // Erro/Aviso
+                );
+            }
+        }
+
+        // --- 4. FILTRAR COMENTÁRIOS ---
+        function updateCommentVisibility(disciplinaId) {
+            const allComments = document.querySelectorAll('.comment-item');
+            if (allComments.length === 0) return; // Se não tem comentários, sai
+
+            const noCommentsMsg = document.getElementById('no-comments-message');
+            const noFilterMsg = document.getElementById('no-filter-results-message');
+            
+            let commentsFound = 0;
+
+            allComments.forEach(comment => {
+                const commentDisciplinaId = comment.dataset.disciplinaId;
+                if (disciplinaId === 'all' || commentDisciplinaId === disciplinaId) {
+                    comment.style.display = 'block';
+                    commentsFound++;
+                } else {
+                    comment.style.display = 'none';
+                }
+            });
+
+            if (noCommentsMsg) noCommentsMsg.style.display = 'none';
+            if (noFilterMsg) noFilterMsg.style.display = 'none';
+
+            if (commentsFound === 0) {
+                if (allComments.length === 0 && noCommentsMsg) {
+                    noCommentsMsg.style.display = 'block';
+                } else if (noFilterMsg) {
+                    noFilterMsg.style.display = 'block';
+                }
+            }
+        }
+
+        // --- 5. EVENTO SELECT ---
+        mainSelect.addEventListener('change', function() {
+            const selectedId = this.value;
+            updateChart(selectedId); 
+            
+            // Passa o ID selecionado diretamente para a função de toggle para verificar a permissão da disciplina
+            toggleFormsVisibility(selectedId);
+            
+            updateCommentVisibility(selectedId);
         });
-      });
-    }
 
-    // Inicialização
-    toggleFormsVisibility(false); 
-    updateCommentVisibility('all');
-  });
+        // --- 6. SUBMIT AVALIAÇÃO (SÓ ALUNO) ---
+        if (ratingForm) {
+            ratingForm.addEventListener('submit', function(event) {
+                event.preventDefault();
+                const selectedDisciplinaId = mainSelect.value;
+                if (selectedDisciplinaId === 'all') {
+                    displayMessage('Por favor, selecione uma disciplina específica para avaliar.', false);
+                    return;
+                }
+
+                const formData = new FormData(ratingForm);
+                const notas = {
+                    disciplina_pessoa_id: selectedDisciplinaId,
+                    didatica: formData.get('didatica'),
+                    dificuldade: formData.get('dificuldade'),
+                    relacionamento: formData.get('relacionamento'),
+                    pontualidade: formData.get('pontualidade')
+                };
+
+                fetch("{% url 'salvar_avaliacao_api' %}", {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
+                    body: JSON.stringify(notas)
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        displayMessage('Avaliação salva com sucesso!', true);
+                        setTimeout(() => { location.reload(); }, 1500); 
+                    } else {
+                        displayMessage('Erro: ' + data.error, false);
+                    }
+                })
+                .catch(error => {
+                    displayMessage('Erro na requisição: ' + error, false);
+                });
+            });
+        }
+
+        // --- 7. SUBMIT COMENTÁRIO (SÓ ALUNO) ---
+        if (commentForm) {
+            commentForm.addEventListener('submit', function(event) {
+                event.preventDefault();
+                const selectedDisciplinaId = mainSelect.value;
+                if (selectedDisciplinaId === 'all') {
+                    displayMessage('Por favor, selecione uma disciplina específica para comentar.', false);
+                    return;
+                }
+                
+                const comentario = {
+                    disciplina_pessoa_id: selectedDisciplinaId,
+                    texto: document.getElementById('comment-text').value
+                };
+
+                fetch("{% url 'salvar_comentario_api' %}", {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
+                    body: JSON.stringify(comentario)
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        displayMessage('Comentário salvo!', true);
+                        setTimeout(() => { location.reload(); }, 1500); 
+                    } else {
+                        displayMessage('Erro: ' + data.error, false);
+                    }
+                })
+                .catch(error => {
+                    displayMessage('Erro na requisição: ' + error, false);
+                });
+            });
+        }
+
+        // Inicialização: Esconde os formulários se a permissão existir, mas a opção "Todas" estiver selecionada.
+        toggleFormsVisibility(mainSelect.value); 
+        updateCommentVisibility('all');
+    });
 </script>
-
 {% endblock content %}
