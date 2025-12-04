@@ -438,7 +438,7 @@ def detalhes_professor(request, professor_id):
     # =======================================================
     pode_avaliar = False
     disciplinas_permitidas_ids = []
-    disciplinas_avaliadas_ids = [] # <-- VARIÁVEL PARA GUARDAR OS IDS AVALIADOS
+    disciplinas_avaliadas_ids = [] # <-- VARIÁVEL PARA GUARDAR OS IDS JÁ AVALIADOS
     
     # Verifica se o usuário está logado E se é do tipo 'aluno'
     if request.user.is_authenticated and request.user.user_type == 'aluno':
@@ -457,7 +457,6 @@ def detalhes_professor(request, professor_id):
                 
                 # NOVO: OBTÉM IDS DOS VÍNCULOS QUE O ALUNO JÁ AVALIOU
                 # Filtra as Avaliacoes por aluno e pelo conjunto de disciplinas permitidas
-                # Assume que sua model Avaliacao foi corrigida para ter o campo 'aluno'
                 disciplinas_avaliadas_ids = list(Avaliacao.objects.filter(
                     aluno=aluno_logado,
                     disciplina_pessoa__in=disciplinas_permitidas_ids
@@ -494,7 +493,7 @@ def detalhes_professor(request, professor_id):
             'dados_grafico_json': json.dumps({'all': dados_all}),
             'pode_avaliar': pode_avaliar,
             'disciplinas_permitidas_json': json.dumps(disciplinas_permitidas_ids),
-            'disciplinas_avaliadas_json': json.dumps(disciplinas_avaliadas_ids), # <--- NOVO JSON AQUI
+            'disciplinas_avaliadas_json': json.dumps(disciplinas_avaliadas_ids), # ENVIADO AQUI
         }
         return render(request, 'avaliacoes/detalhes_professor.html', context)
 
@@ -534,7 +533,7 @@ def detalhes_professor(request, professor_id):
         'dados_grafico_json': json.dumps(dados_grafico, default=str), # Envia o NOVO JSON
         'pode_avaliar': pode_avaliar,
         'disciplinas_permitidas_json': json.dumps(disciplinas_permitidas_ids),
-        'disciplinas_avaliadas_json': json.dumps(disciplinas_avaliadas_ids), # <--- NOVO JSON AQUI
+        'disciplinas_avaliadas_json': json.dumps(disciplinas_avaliadas_ids), # ENVIADO AQUI
     }
 
     return render(request, 'avaliacoes/detalhes_professor.html', context)
@@ -547,6 +546,8 @@ def salvar_avaliacao_api(request):
         data = json.loads(request.body)
         disciplina_pessoa_id = data.get('disciplina_pessoa_id')
         
+        comentario_texto = data.get('comentario', '').strip()
+
         if not disciplina_pessoa_id:
             return JsonResponse({'success': False, 'error': 'Disciplina não selecionada'}, status=400)
 
@@ -579,7 +580,8 @@ def salvar_avaliacao_api(request):
         # CORREÇÃO: Passa o objeto 'aluno_logado' para ligar a avaliação ao aluno.
         nova_avaliacao = Avaliacao.objects.create(
             disciplina_pessoa=disciplina_pessoa,
-            aluno=aluno_logado 
+            aluno=aluno_logado, 
+            comentario=comentario_texto if comentario_texto else None # <-- AQUI ESTÁ A MUDANÇA
         )
 
         # 3. Busca as categorias para usar as FKs

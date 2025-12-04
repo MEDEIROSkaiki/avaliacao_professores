@@ -30,7 +30,7 @@ SECRET_KEY = 'django-insecure-6=nd%qlj54)xdt839cr$58#__es7japrtb)*cgxg*aor_7hh7(
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
 
-ALLOWED_HOSTS = ['kaua2004.pythonanywhere.com', '127.0.0.1', 'localhost']
+ALLOWED_HOSTS = ['kaua2004.pythonanywhere.com']
 
 
 # Application definition
@@ -123,7 +123,7 @@ USE_TZ = True
 
 import os  # (Se já estiver importado no topo, não precisa repetir aqui)
 
-STATIC_URL = '/static/'
+STATIC_URL = 'static/'
 
 # ORIGEM: Onde você edita seus CSS/JS
 STATICFILES_DIRS = [

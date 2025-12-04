@@ -4,369 +4,368 @@
 {% block content %}
 
 <style>
-  /* ============ PÁGINA DE PERFIL DO PROFESSOR ============ */
-  .profile-grid-container {
-    display: grid;
-    grid-template-columns: 320px 1fr;
-    gap: 30px;
-    align-items: flex-start;
-    width: 100%;
-    max-width: 1200px;
-    margin: 0 auto; 
-  }
+    /* ============ PÁGINA DE PERFIL DO PROFESSOR ============ */
+    .profile-grid-container {
+        display: grid;
+        grid-template-columns: 320px 1fr;
+        gap: 30px;
+        align-items: flex-start;
+        width: 100%;
+        max-width: 1200px;
+        margin: 0 auto; 
+    }
 
-  /* --- Card do Professor (Esquerda) --- */
-  .professor-card {
-    background-color: #fff;
-    border-radius: 12px;
-    padding: 30px;
-    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
-  }
-  .professor-image-placeholder {
-    width: 150px;
-    height: 150px;
-    border-radius: 50%;
-    background-color: var(--painel-central);
-    margin: 0 auto 20px auto;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 5rem;
-    color: var(--azul-acinzentado);
-  }
-  .professor-card h2 {
-    text-align: center;
-    font-size: 1.6rem;
-    color: var(--azul-marinho);
-    margin-bottom: 5px;
-    font-weight: 600;
-  }
-  /* CSS para a lista de disciplinas na sidebar */
-  .professor-card .subject-list {
-    text-align: center;
-    font-size: 1rem;
-    color: var(--verde-escuro-letras);
-    margin-bottom: 20px;
-    list-style: none; /* Remove bolinhas */
-    padding: 0;
-  }
-  .professor-card .subject-list li {
-    font-weight: 500;
-    padding: 4px 0;
-    border-bottom: 1px solid var(--painel-central);
-  }
-  .professor-card .subject-list li:last-child {
-    border-bottom: none;
-  }
+    /* --- Card do Professor (Esquerda) --- */
+    .professor-card {
+        background-color: #fff;
+        border-radius: 12px;
+        padding: 30px;
+        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+    }
+    .professor-image-placeholder {
+        width: 150px;
+        height: 150px;
+        border-radius: 50%;
+        background-color: var(--painel-central);
+        margin: 0 auto 20px auto;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 5rem;
+        color: var(--azul-acinzentado);
+    }
+    .professor-card h2 {
+        text-align: center;
+        font-size: 1.6rem;
+        color: var(--azul-marinho);
+        margin-bottom: 5px;
+        font-weight: 600;
+    }
+    /* CSS para a lista de disciplinas na sidebar */
+    .professor-card .subject-list {
+        text-align: center;
+        font-size: 1rem;
+        color: var(--verde-escuro-letras);
+        margin-bottom: 20px;
+        list-style: none; /* Remove bolinhas */
+        padding: 0;
+    }
+    .professor-card .subject-list li {
+        font-weight: 500;
+        padding: 4px 0;
+        border-bottom: 1px solid var(--painel-central);
+    }
+    .professor-card .subject-list li:last-child {
+        border-bottom: none;
+    }
 
-  /* --- Conteúdo Principal (Direita) --- */
-  .evaluation-main { display: flex; flex-direction: column; gap: 30px; }
-  
-  /* --- Card Unificado --- */
-  .unified-card {
-    padding: 30px;
-    background-color: #fff;
-    border-radius: 12px;
-    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
-  }
+    /* --- Conteúdo Principal (Direita) --- */
+    .evaluation-main { display: flex; flex-direction: column; gap: 30px; }
+    
+    /* --- Card Unificado --- */
+    .unified-card {
+        padding: 30px;
+        background-color: #fff;
+        border-radius: 12px;
+        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+    }
 
-  .disciplina-select-group {
-    margin-bottom: 20px;
-    text-align: left;
-  }
-  .disciplina-select-group label {
-    font-weight: 600;
-    color: var(--azul-marinho);
-    margin-bottom: 8px;
-    display: block;
-    font-size: 1.2rem;
-  }
-  .disciplina-select-group select {
-    width: 100%;
-    padding: 12px;
-    border: 1px solid var(--cinza-claro);
-    border-radius: 8px;
-    background-color: var(--painel-central);
-    font-size: 1rem;
-    font-family: 'Segoe UI', sans-serif;
-  }
-  
-  .chart-container { 
-    height: 350px; 
-    position: relative;
-    margin-top: 25px;
-    margin-bottom: 30px;
-  }
-  
-  /* --- Formulário de Notas (Dentro do Card Unificado) --- */
-  #rating-form { text-align: center; }
-  #rating-form h3 {
-    font-size: 1.4rem;
-    font-weight: 600;
-    color: var(--azul-marinho);
-    margin-bottom: 25px;
-    border-top: 2px solid var(--painel-central);
-    padding-top: 30px;
-  }
-  .rating-inputs {
-    display: flex;
-    justify-content: center;
-    gap: 15px;
-    flex-wrap: wrap;
-    margin-bottom: 25px;
-  }
-  .rating-group {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 15px;
-    border-radius: 8px;
-    border: 1px solid var(--cinza-claro);
-    flex: 1; 
-    min-width: 120px; 
-  }
-  .rating-group.rg-didatica { background-color: #d1eef4; }
-  .rating-group.rg-dificuldade { background-color: #d4edda; }
-  .rating-group.rg-relacionamento { background-color: #fff3cd; }
-  .rating-group.rg-pontualidade { background-color: #e2d9f3; }
-  .rating-group label { font-weight: 600; margin-bottom: 8px; color: #333; }
-  .rating-group input {
-    width: 80px;
-    padding: 10px;
-    border: 1px solid var(--cinza-claro);
-    border-radius: 6px;
-    text-align: center;
-    font-size: 1rem;
-    font-weight: 500;
-    box-sizing: border-box;
-  }
-  .btn-submit {
-    padding: 12px 25px;
-    font-size: 1rem;
-    background-color: var(--verde-escuro-letras);
-    color: white;
-    border: none;
-    border-radius: 8px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.3s ease;
-  }
-  .btn-submit:hover { background-color: var(--azul-marinho); }
+    .disciplina-select-group {
+        margin-bottom: 20px;
+        text-align: left;
+    }
+    .disciplina-select-group label {
+        font-weight: 600;
+        color: var(--azul-marinho);
+        margin-bottom: 8px;
+        display: block;
+        font-size: 1.2rem;
+    }
+    .disciplina-select-group select {
+        width: 100%;
+        padding: 12px;
+        border: 1px solid var(--cinza-claro);
+        border-radius: 8px;
+        background-color: var(--painel-central);
+        font-size: 1rem;
+        font-family: 'Segoe UI', sans-serif;
+    }
+    
+    .chart-container { 
+        height: 350px; 
+        position: relative;
+        margin-top: 25px;
+        margin-bottom: 30px;
+    }
+    
+    /* --- Formulário de Notas (Dentro do Card Unificado) --- */
+    #rating-form { text-align: center; }
+    #rating-form h3 {
+        font-size: 1.4rem;
+        font-weight: 600;
+        color: var(--azul-marinho);
+        margin-bottom: 25px;
+        border-top: 2px solid var(--painel-central);
+        padding-top: 30px;
+    }
+    .rating-inputs {
+        display: flex;
+        justify-content: center;
+        gap: 15px;
+        flex-wrap: wrap;
+        margin-bottom: 25px;
+    }
+    .rating-group {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 15px;
+        border-radius: 8px;
+        border: 1px solid var(--cinza-claro);
+        flex: 1; 
+        min-width: 120px; 
+    }
+    .rating-group.rg-didatica { background-color: #d1eef4; }
+    .rating-group.rg-dificuldade { background-color: #d4edda; }
+    .rating-group.rg-relacionamento { background-color: #fff3cd; }
+    .rating-group.rg-pontualidade { background-color: #e2d9f3; }
+    .rating-group label { font-weight: 600; margin-bottom: 8px; color: #333; }
+    .rating-group input {
+        width: 80px;
+        padding: 10px;
+        border: 1px solid var(--cinza-claro);
+        border-radius: 6px;
+        text-align: center;
+        font-size: 1rem;
+        font-weight: 500;
+        box-sizing: border-box;
+    }
+    .btn-submit {
+        padding: 12px 25px;
+        font-size: 1rem;
+        background-color: var(--verde-escuro-letras);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    .btn-submit:hover { background-color: var(--azul-marinho); }
 
-  /* --- Card de Comentários (Abaixo do Grid) --- */
-  .comment-card {
-    grid-column: 1 / -1; 
-    margin-top: 30px;
-    padding: 30px;
-    background-color: #fff;
-    border-radius: 12px;
-    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
-  }
-  .comment-card h3 {
-    font-size: 1.4rem;
-    font-weight: 600;
-    color: var(--azul-marinho);
-    margin-bottom: 15px;
-  }
-  #comment-form textarea {
-    width: 100%;
-    height: 90px;
-    padding: 15px;
-    border: 1px solid var(--cinza-claro);
-    border-radius: 8px;
-    font-family: 'Segoe UI', sans-serif;
-    font-size: 1rem;
-    box-sizing: border-box;
-    resize: vertical;
-    background-color: var(--painel-central);
-  }
-  .comment-submit-area { text-align: right; margin-top: 10px; }
-  .comment-submit-area button {
-    background-color: var(--azul-acinzentado);
-    color: white;
-    border: none;
-    padding: 10px 20px;
-    border-radius: 6px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: background-color 0.3s;
-  }
-  .comment-submit-area button:hover { background-color: var(--verde-escuro-letras); }
-  .comments-list h3 {
-    margin-top: 30px;
-    border-bottom: 2px solid var(--painel-central);
-    padding-bottom: 10px;
-  }
-  .comment {
-    border-bottom: 1px solid var(--painel-central);
-    padding: 15px 0;
-  }
-  .comment:last-child { border-bottom: none; padding-bottom: 0; }
-  .comment .timestamp {
-    font-size: 0.85rem;
-    color: var(--cinza-escuro-letras);
-    font-weight: 600;
-    margin-bottom: 5px;
-  }
-  .comment p { margin: 0; line-height: 1.6; color: var(--verde-escuro-letras); }
+    /* --- Card de Comentários (Ajustado para ficar na coluna principal) --- */
+    /* REMOVIDO: grid-column: 1 / -1; e margin-top: 30px; */
+    .comment-card {
+        /* grid-column: 1 / -1; Removido, agora está dentro de evaluation-main */
+        /* margin-top: 30px; Removido, o gap do evaluation-main cuida disso */
+        padding: 30px;
+        background-color: #fff;
+        border-radius: 12px;
+        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+    }
+    .comment-card h3 {
+        font-size: 1.4rem;
+        font-weight: 600;
+        color: var(--azul-marinho);
+        margin-bottom: 15px;
+    }
+    #comment-form textarea {
+        width: 100%;
+        height: 90px;
+        padding: 15px;
+        border: 1px solid var(--cinza-claro);
+        border-radius: 8px;
+        font-family: 'Segoe UI', sans-serif;
+        font-size: 1rem;
+        box-sizing: border-box;
+        resize: vertical;
+        background-color: var(--painel-central);
+    }
+    /* REMOVIDO: O bloco .comment-submit-area e seu conteúdo, pois o botão foi movido */
+    .comments-list h3 {
+        margin-top: 30px;
+        border-bottom: 2px solid var(--painel-central);
+        padding-bottom: 10px;
+    }
+    .comment {
+        border-bottom: 1px solid var(--painel-central);
+        padding: 15px 0;
+    }
+    .comment:last-child { border-bottom: none; padding-bottom: 0; }
+    .comment .timestamp {
+        font-size: 0.85rem;
+        color: var(--cinza-escuro-letras);
+        font-weight: 600;
+        margin-bottom: 5px;
+    }
+    .comment p { margin: 0; line-height: 1.6; color: var(--verde-escuro-letras); }
 
-  /* --- Responsividade --- */
-  @media (max-width: 900px) {
-    .profile-grid-container { grid-template-columns: 1fr; }
-    .professor-card { position: static; max-width: 450px; margin: 0 auto; }
-  }
-  @media (max-width: 500px) {
-    .rating-inputs { flex-direction: column; gap: 10px; }
-    .rating-group input { width: 100%; }
-  }
+    /* --- Responsividade --- */
+    @media (max-width: 900px) {
+        .profile-grid-container { grid-template-columns: 1fr; }
+        .professor-card { position: static; max-width: 450px; margin: 0 auto; }
+    }
+    @media (max-width: 500px) {
+        .rating-inputs { flex-direction: column; gap: 10px; }
+        .rating-group input { width: 100%; }
+    }
 </style>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@sgratzl/chartjs-chart-boxplot@4.3.0/build/index.umd.min.js"></script>
 
 <div class="admin-container" style="max-width: 1200px; padding-top: 40px;">
-  
-  <div class="profile-grid-container">
+    
+    <div class="profile-grid-container">
 
-    <aside class="professor-card">
-        <div class="professor-image-placeholder">
-            {% if professor.foto %}
-                <img src="{{ professor.foto.url }}" alt="Foto de {{ professor.user.get_full_name }}" style="
-                    width: 100%; 
-                    height: 100%; 
-                    object-fit: cover;
-                    border-radius: 50%;
-                ">
-            {% else %}
-                <i class="fa-solid fa-user"></i>
-            {% endif %}
-        </div>
-        <h2>{{ professor.user.get_full_name }}</h2>
-        <ul class="subject-list">
-            {% for dp in professor.user.disciplinas_pessoa.all %}
-                <li>{{ dp.disciplina.nome }}</li>
-            {% empty %}
-                <li>Nenhuma disciplina</li>
-            {% endfor %}
-        </ul>
-    </aside>
+        <aside class="professor-card">
+            <div class="professor-image-placeholder">
+                {% if professor.foto %}
+                    <img src="{{ professor.foto.url }}" alt="Foto de {{ professor.user.get_full_name }}" style="
+                        width: 100%; 
+                        height: 100%; 
+                        object-fit: cover;
+                        border-radius: 50%;
+                    ">
+                {% else %}
+                    <i class="fa-solid fa-user"></i>
+                {% endif %}
+            </div>
+            <h2>{{ professor.user.get_full_name }}</h2>
+            <ul class="subject-list">
+                {% for dp in professor.user.disciplinas_pessoa.all %}
+                    <li>{{ dp.disciplina.nome }}</li>
+                {% empty %}
+                    <li>Nenhuma disciplina</li>
+                {% endfor %}
+            </ul>
+        </aside>
 
-    <section class="evaluation-main">
-      <div class="unified-card">
-        
-        <div class="disciplina-select-group">
-          <label for="main-disciplina-select">Selecione uma disciplina:</label>
-          <select id="main-disciplina-select">
-            <option value="all" selected>Ver todas as disciplinas</option>
-            {% for dp in disciplinas_professor %}
-              <option value="{{ dp.pk }}">{{ dp.disciplina.nome }}</option>
-            {% endfor %}
-          </select>
-        </div>
-        {% if request.user.user_type == 'aluno' and not pode_avaliar %}
-                        <div class="unauthorized-message" style="
-                            padding: 15px; 
-                            margin-bottom: 25px; 
-                            border: 1px solid #f0ad4e; /* Laranja */
-                            background-color: #fff8e1; 
-                            color: #8a6d3b; 
-                            border-radius: 8px; 
-                            text-align: center;
-                        ">
-                            <p style="margin: 0; font-weight: 500;">
-                                <i class="fa-solid fa-circle-exclamation"></i> Você não está matriculado em nenhuma disciplina ministrada por este professor e, portanto, não pode enviar avaliações.
-                            </p>
+        <section class="evaluation-main">
+            <div class="unified-card">
+                
+                <div class="disciplina-select-group">
+                    <label for="main-disciplina-select">Selecione uma disciplina:</label>
+                    <select id="main-disciplina-select">
+                        <option value="all" selected>Ver todas as disciplinas</option>
+                        {% for dp in disciplinas_professor %}
+                            <option value="{{ dp.pk }}">{{ dp.disciplina.nome }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                {% if request.user.user_type == 'aluno' and not pode_avaliar %}
+                                        <div class="unauthorized-message" style="
+                                            padding: 15px; 
+                                            margin-bottom: 25px; 
+                                            border: 1px solid #f0ad4e; /* Laranja */
+                                            background-color: #fff8e1; 
+                                            color: #8a6d3b; 
+                                            border-radius: 8px; 
+                                            text-align: center;
+                                        ">
+                                            <p style="margin: 0; font-weight: 500;">
+                                                <i class="fa-solid fa-circle-exclamation"></i> Você não está matriculado em nenhuma disciplina ministrada por este professor e, portanto, não pode enviar avaliações.
+                                            </p>
+                                        </div>
+                    {% endif %}        
+
+                {% if request.user.user_type == 'admin' %}
+                    <div class="chart-container">
+                        <canvas id="boxplot"></canvas>
+                    </div>
+                {% endif %}
+
+                {% if pode_avaliar %}
+                    <form id="rating-form">
+                    {% csrf_token %}
+                    <h3>Avaliar a disciplina selecionada</h3>
+                    <div class="rating-inputs">
+                        <div class="rating-group rg-didatica">
+                        <label for="nota-didatica">Didática</label>
+                        <input type="number" id="nota-didatica" name="didatica" min="0" max="10" step="0.5" placeholder="Nota" required>
                         </div>
-          {% endif %}        
+                        <div class="rating-group rg-dificuldade">
+                        <label for="nota-dificuldade">Dificuldade</label>
+                        <input type="number" id="nota-dificuldade" name="dificuldade" min="0" max="10" step="0.5" placeholder="Nota" required>
+                        </div>
+                        <div class="rating-group rg-relacionamento">
+                        <label for="nota-relacionamento">Relacionamento</label>
+                        <input type="number" id="nota-relacionamento" name="relacionamento" min="0" max="10" step="0.5" placeholder="Nota" required>
+                        </div>
+                        <div class="rating-group rg-pontualidade">
+                        <label for="nota-pontualidade">Pontualidade</label>
+                        <input type="number" id="nota-pontualidade" name="pontualidade" min="0" max="10" step="0.5" placeholder="Nota" required>
+                        </div>
+                    </div>
+                    </form>
+                {% endif %}
+                <div id="ajax-message-container" style="margin-bottom: 25px;margin-top:10px"></div>
+            </div>
 
-        {% if request.user.user_type == 'admin' %}
-            <div class="chart-container">
-                <canvas id="boxplot"></canvas>
-            </div>
-        {% endif %}
+            <section class="comment-card">
+                
+                {% if pode_avaliar %}
+                    <form id="comment-form">
+                        {% csrf_token %}
+                        <h3>Adicione um comentário para a disciplina selecionada</h3>
+                        <textarea id="comment-text" placeholder="Seja construtivo e respeitoso. Seu comentário é anônimo." required></textarea>
+                        </form>
+                {% endif %}
 
-        {% if pode_avaliar %}
-            <form id="rating-form">
-            {% csrf_token %}
-            <h3>Avaliar a disciplina selecionada</h3>
-            <div class="rating-inputs">
-                <div class="rating-group rg-didatica">
-                <label for="nota-didatica">Didática</label>
-                <input type="number" id="nota-didatica" name="didatica" min="0" max="10" step="0.5" placeholder="Nota" required>
-                </div>
-                <div class="rating-group rg-dificuldade">
-                <label for="nota-dificuldade">Dificuldade</label>
-                <input type="number" id="nota-dificuldade" name="dificuldade" min="0" max="10" step="0.5" placeholder="Nota" required>
-                </div>
-                <div class="rating-group rg-relacionamento">
-                <label for="nota-relacionamento">Relacionamento</label>
-                <input type="number" id="nota-relacionamento" name="relacionamento" min="0" max="10" step="0.5" placeholder="Nota" required>
-                </div>
-                <div class="rating-group rg-pontualidade">
-                <label for="nota-pontualidade">Pontualidade</label>
-                <input type="number" id="nota-pontualidade" name="pontualidade" min="0" max="10" step="0.5" placeholder="Nota" required>
-                </div>
-            </div>
-            <button type="submit" class="btn-submit">Submeter Avaliação</button>
-            </form>
-        {% endif %}
-        <div id="ajax-message-container" style="margin-bottom: 25px;margin-top:10px"></div>
-      </div>
-    </section>
-  
-    <section class="comment-card">
-      
-      {% if pode_avaliar %}
-        <form id="comment-form">
-            {% csrf_token %}
-            <h3>Adicione um comentário para a disciplina selecionada</h3>
-            <textarea id="comment-text" placeholder="Seja construtivo e respeitoso. Seu comentário é anônimo." required></textarea>
-            <div class="comment-submit-area">
-            <button type="submit">Publicar</button>
-            </div>
-        </form>
-      {% endif %}
+                {% if request.user.user_type == 'admin' or request.user.user_type == 'professor' and request.user.id == professor.user.id %}
+                    
+                    <div class="comments-list">
+                        <h3>Comentários Recebidos</h3>
+                        
+                        {% for avaliacao in comentarios %}
+                        <div class="comment comment-item" data-disciplina-id="{{ avaliacao.disciplina_pessoa.pk }}">
+                            <div class="timestamp">{{ avaliacao.data_avaliacao|date:"d/m/Y - H:i:s" }}</div>
+                            <p>{{ avaliacao.comentario }}</p>
+                        </div>
+                        {% empty %}
+                        <div class="comment" id="no-comments-message">
+                            <p>Nenhum comentário disponível.</p>
+                        </div>
+                        {% endfor %}
 
-      {% if request.user.user_type == 'admin' or request.user.user_type == 'professor' and request.user.id == professor.user.id %}
-        
-        <div class="comments-list">
-            <h3>Comentários Recebidos</h3>
-            
-            {% for avaliacao in comentarios %}
-            <div class="comment comment-item" data-disciplina-id="{{ avaliacao.disciplina_pessoa.pk }}">
-                <div class="timestamp">{{ avaliacao.data_avaliacao|date:"d/m/Y - H:i:s" }}</div>
-                <p>{{ avaliacao.comentario }}</p>
-            </div>
-            {% empty %}
-            <div class="comment" id="no-comments-message">
-                <p>Nenhum comentário disponível.</p>
-            </div>
-            {% endfor %}
+                        <div class="comment" id="no-filter-results-message" style="display: none;">
+                            <p>Nenhum comentário para esta disciplina específica.</p>
+                        </div>
+                    </div>
 
-            <div class="comment" id="no-filter-results-message" style="display: none;">
-            <p>Nenhum comentário para esta disciplina específica.</p>
-            </div>
+                {% elif request.user.user_type == 'aluno' or request.user.user_type == 'professor' %}
+                    <div style="margin-top: 20px; text-align: center; color: var(--verde-escuro-letras);">
+                        <p><i class="fa-solid fa-lock"></i> Os comentários e médias são informações confidenciais.</p>
+                    </div>
+                {% endif %}
+
+                {% if pode_avaliar %}
+                <div class="comment-submit-area" id="final-submit-button"> 
+                        <button type="button" class="btn-submit" onclick="document.getElementById('rating-form').dispatchEvent(new Event('submit', {bubbles: true}))">Enviar Avaliação e Comentário</button>
+                    </div>
+                    <style>
+                        /* Estilo para garantir que o botão no final tenha a mesma aparência e alinhamento do original */
+                        #final-submit-button { 
+                            margin-top: 20px; 
+                            text-align: center;
+                        }
+                    </style>
+                {% endif %}
+
+            </section>
+        </section>
         </div>
-
-      {% elif request.user.user_type == 'aluno' or request.user.user_type == 'professor' %}
-        <div style="margin-top: 20px; text-align: center; color: var(--verde-escuro-letras);">
-            <p><i class="fa-solid fa-lock"></i> Os comentários e médias são informações confidenciais.</p>
-         </div>
-      {% endif %}
-    </section>
-  </div>
 </div>
 <script>
     const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
     
     // Captura a flag de permissão GERAL (se o aluno pode avaliar alguma coisa)
-    // Garante que o valor seja um booleano JS (true ou false)
     const podeAvaliar = Boolean('{{ pode_avaliar|lower }}' === 'true'); 
 
     // Captura a lista de IDs de DisciplinaPessoa que o aluno tem matrícula
     const disciplinasPermitidas = JSON.parse('{{ disciplinas_permitidas_json|default:"[]"|safe }}');
     
-    // NOVO: Captura a lista de IDs de DisciplinaPessoa que o aluno JÁ AVALIOU
+    // Captura a lista de IDs de DisciplinaPessoa que o aluno JÁ AVALIOU
     const disciplinasAvaliadas = JSON.parse('{{ disciplinas_avaliadas_json|default:"[]"|safe }}');
 
     // Só carrega os dados se o usuário for ADMIN para evitar exposição no código fonte
@@ -412,6 +411,7 @@
         // Pega elementos opcionais (podem não existir dependendo do usuário)
         const ratingForm = document.getElementById('rating-form');
         const commentForm = document.getElementById('comment-form');
+        const finalSubmitButtonArea = document.getElementById('final-submit-button'); // Novo: área do botão final
 
         // --- 1. GRÁFICO (SÓ EXECUTA SE O ELEMENTO EXISTIR) ---
         const canvasElement = document.getElementById('boxplot');
@@ -473,56 +473,49 @@
         // --- 3. MOSTRAR/ESCONDER FORMULÁRIOS (AGORA COM 3 ESTADOS) ---
         function toggleFormsVisibility(selectedId) {
             
-            // 1. Permissão geral (usuário é aluno E tem pelo menos uma matrícula)
             const hasGlobalPermission = podeAvaliar; 
-            
-            // 2. A disciplina selecionada é a opção "Ver todas"?
             const isAllSelected = selectedId === 'all';
 
-            // Reseta o display dos formulários
+            // Esconde TUDO que é de interação antes
             if(ratingForm) ratingForm.style.display = 'none';
             if(commentForm) commentForm.style.display = 'none';
-            
+            if(finalSubmitButtonArea) finalSubmitButtonArea.style.display = 'none'; // Novo
+
             const container = document.getElementById('ajax-message-container');
             if (container) container.innerHTML = ''; // Limpa antes de começar
 
             
             if (!hasGlobalPermission || isAllSelected) {
-                // Se não tem permissão geral (aviso laranja já está no HTML) ou é 'all', não faz mais nada.
-                return;
+                return; // Lógica padrão
             }
 
-            // Converter selectedId para número para checagem
             const selectedIdNum = parseInt(selectedId); 
-            
-            // 3. A disciplina selecionada está na lista de IDs permitidos?
             const isMatriculated = disciplinasPermitidas.includes(selectedIdNum);
-            
-            // 4. A disciplina selecionada JÁ foi avaliada?
             const hasAlreadyEvaluated = disciplinasAvaliadas.includes(selectedIdNum);
 
             if (isMatriculated && !hasAlreadyEvaluated) {
-                // Estado 1: PODE AVALIAR (Matriculado e não avaliou)
+                // Estado 1: PODE AVALIAR
                 if(ratingForm) ratingForm.style.display = 'block';
                 if(commentForm) commentForm.style.display = 'block';
+                if(finalSubmitButtonArea) finalSubmitButtonArea.style.display = 'block'; // Novo
                 
             } else if (isMatriculated && hasAlreadyEvaluated) {
-                // Estado 2: JÁ AVALIOU (Matriculado e já avaliou)
+                // Estado 2: JÁ AVALIOU
                 displayMessage(
                     'Você já enviou uma avaliação para esta disciplina e professor. Obrigado!', 
-                    true // Sucesso/Informativo
+                    true 
                 );
 
             } else {
-                // Estado 3: NÃO MATRICULADO NESTA DISCIPLINA ESPECÍFICA (Aviso)
+                // Estado 3: NÃO MATRICULADO NESTA DISCIPLINA ESPECÍFICA
                 displayMessage(
                     'Você não está matriculado nesta disciplina e não pode avaliá-la.', 
-                    false // Erro/Aviso
+                    false 
                 );
             }
         }
 
-        // --- 4. FILTRAR COMENTÁRIOS ---
+        // --- 4. FILTRAR COMENTÁRIOS (Inalterada) ---
         function updateCommentVisibility(disciplinaId) {
             const allComments = document.querySelectorAll('.comment-item');
             if (allComments.length === 0) return; // Se não tem comentários, sai
@@ -554,34 +547,41 @@
             }
         }
 
-        // --- 5. EVENTO SELECT ---
+        // --- 5. EVENTO SELECT (Inalterada) ---
         mainSelect.addEventListener('change', function() {
             const selectedId = this.value;
             updateChart(selectedId); 
             
-            // Passa o ID selecionado diretamente para a função de toggle para verificar a permissão da disciplina
             toggleFormsVisibility(selectedId);
             
             updateCommentVisibility(selectedId);
         });
 
-        // --- 6. SUBMIT AVALIAÇÃO (SÓ ALUNO) ---
+        // --- 6. SUBMIT AVALIAÇÃO (AGORA INCLUI COMENTÁRIO) ---
         if (ratingForm) {
             ratingForm.addEventListener('submit', function(event) {
                 event.preventDefault();
+                if (!ratingForm.checkValidity()) {
+                  displayMessage('Por favor, preencha os dados obrigatórios.', false);
+            return; 
+        }
                 const selectedDisciplinaId = mainSelect.value;
                 if (selectedDisciplinaId === 'all') {
                     displayMessage('Por favor, selecione uma disciplina específica para avaliar.', false);
                     return;
                 }
 
+                // Captura o texto do comentário do textarea que está no commentForm
+                const comentarioTexto = document.getElementById('comment-text') ? document.getElementById('comment-text').value : '';
+                
                 const formData = new FormData(ratingForm);
                 const notas = {
                     disciplina_pessoa_id: selectedDisciplinaId,
                     didatica: formData.get('didatica'),
                     dificuldade: formData.get('dificuldade'),
                     relacionamento: formData.get('relacionamento'),
-                    pontualidade: formData.get('pontualidade')
+                    pontualidade: formData.get('pontualidade'),
+                    comentario: comentarioTexto // <-- NOVO: Adiciona o comentário ao payload
                 };
 
                 fetch("{% url 'salvar_avaliacao_api' %}", {
@@ -592,7 +592,7 @@
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
-                        displayMessage('Avaliação salva com sucesso!', true);
+                        displayMessage('Avaliação e Comentário salvos com sucesso!', true);
                         setTimeout(() => { location.reload(); }, 1500); 
                     } else {
                         displayMessage('Erro: ' + data.error, false);
@@ -604,39 +604,12 @@
             });
         }
 
-        // --- 7. SUBMIT COMENTÁRIO (SÓ ALUNO) ---
+        // --- 7. SUBMIT COMENTÁRIO (REMOVIDO, POIS AGORA FAZ PARTE DO RATING FORM) ---
+        // Mantendo apenas o event listener no commentForm para evitar submissão dupla ou erro no console
         if (commentForm) {
-            commentForm.addEventListener('submit', function(event) {
-                event.preventDefault();
-                const selectedDisciplinaId = mainSelect.value;
-                if (selectedDisciplinaId === 'all') {
-                    displayMessage('Por favor, selecione uma disciplina específica para comentar.', false);
-                    return;
-                }
-                
-                const comentario = {
-                    disciplina_pessoa_id: selectedDisciplinaId,
-                    texto: document.getElementById('comment-text').value
-                };
-
-                fetch("{% url 'salvar_comentario_api' %}", {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
-                    body: JSON.stringify(comentario)
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        displayMessage('Comentário salvo!', true);
-                        setTimeout(() => { location.reload(); }, 1500); 
-                    } else {
-                        displayMessage('Erro: ' + data.error, false);
-                    }
-                })
-                .catch(error => {
-                    displayMessage('Erro na requisição: ' + error, false);
-                });
-            });
+             commentForm.addEventListener('submit', function(event) {
+                 event.preventDefault(); 
+             });
         }
 
         // Inicialização: Esconde os formulários se a permissão existir, mas a opção "Todas" estiver selecionada.
